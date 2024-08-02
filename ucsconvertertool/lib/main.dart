@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:ucsconvertertool/generators/converter_generator.dart';
 
 void main() {
   runApp(const UCSConverterTool());
@@ -72,7 +73,14 @@ class _AppHomePageState extends State<AppHomePage> {
   }
 
   void _convertfile() async {
-    //TODO(ktan): Do something with file
+    //TODO(ktan): Process directory, only file logic for now
+    var converter = ConverterGenerator.createConverter(_controller.text);
+    var ucsFiles = converter.convert();
+
+    for (var ucsFile in ucsFiles) {
+      ucsFile.outputToFile();
+    }
+    
   }
 
   @override
@@ -123,7 +131,9 @@ class _AppHomePageState extends State<AppHomePage> {
                 hintText: 'No file or directory selected',
               ),
             ),
-            Row(mainAxisAlignment: MainAxisAlignment.center,children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 TextButton(
                   style: TextButton.styleFrom(
                     shape: const RoundedRectangleBorder(
@@ -150,7 +160,8 @@ class _AppHomePageState extends State<AppHomePage> {
                   onPressed: _convertfile,
                   child: const Text('Convert'),
                 ),
-              ],)
+              ],
+            )
           ],
         ),
       ),
