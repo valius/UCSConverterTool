@@ -31,7 +31,6 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
-      - run: wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
