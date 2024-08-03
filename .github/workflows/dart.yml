@@ -22,6 +22,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version-file: pubspec.yaml
       - run: flutter build linux
       - run: flutter build windows
       - run: flutter build macos
