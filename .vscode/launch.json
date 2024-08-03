@@ -6,20 +6,20 @@
     "configurations": [
         {
             "name": "ucsconvertertool",
-            "cwd": "ucsconvertertool",
+            "cwd": ".",
             "request": "launch",
             "type": "dart"
         },
         {
             "name": "ucsconvertertool (profile mode)",
-            "cwd": "ucsconvertertool",
+            "cwd": ".",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
             "name": "ucsconvertertool (release mode)",
-            "cwd": "ucsconvertertool",
+            "cwd": ".",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

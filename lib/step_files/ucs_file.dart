@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 class UCSFile {
   final String _filename;
 
@@ -5,5 +7,8 @@ class UCSFile {
 
   void outputToFile() {
     //TODO(ktan): Actually create UCS File here
+    String message =
+        "Will need to implement writing to $_filename.eventually...";
+    log(message);
   }
 }
