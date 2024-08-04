@@ -50,4 +50,15 @@ jobs:
         with:
           channel: stable
       - run: flutter build windows
+  build-macos:
+    needs: analyze
+    runs-on: macos-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter build macos
 
