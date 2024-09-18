@@ -15,7 +15,7 @@ class FallbackConverter implements IConverter {
   }
 
   @override
-  List<UCSFile> convert() {
+  Future<List<UCSFile>> convert() async {
     if (_filename.isEmpty) {
       log("Found empty filename. Skipping...");
     } else {

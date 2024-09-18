@@ -75,7 +75,7 @@ class _AppHomePageState extends State<AppHomePage> {
   void _convertfile() async {
     //TODO(ktan): Process directory, only file logic for now
     var converter = ConverterGenerator.createConverter(_controller.text);
-    var ucsFiles = converter.convert();
+    var ucsFiles = await converter.convert();
 
     for (var ucsFile in ucsFiles) {
       ucsFile.outputToFile();
