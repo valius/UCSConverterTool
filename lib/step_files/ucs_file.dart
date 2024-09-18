@@ -18,7 +18,7 @@ class UCSBlockLine {
 class UCSBlock {
   double bpm = 0;
   double startTime = 0;
-  int beatPerMeasure = 4;   //Default
+  int beatPerMeasure = 4; //Default
   int beatSplit = 0;
   List<UCSBlockLine> lines = [];
 }
@@ -62,8 +62,17 @@ class UCSFile {
 
       for (UCSBlock block in _blocks) {
         //Block tags
-        sink.writeln(':BPM=${block.bpm}');
-        sink.writeln(':Delay=${block.startTime}');
+        //Remove .0 from bpm and start time if they are actually integers
+        String bpmString = block.bpm.toString();
+        if (block.bpm.truncateToDouble() == block.bpm) {
+          bpmString = block.bpm.toStringAsFixed(0);
+        }
+        sink.writeln(':BPM=$bpmString');
+        String startTimeString = block.startTime.toString();
+        if (block.startTime.truncateToDouble() == block.startTime) {
+          startTimeString = block.startTime.toStringAsFixed(0);
+        }
+        sink.writeln(':Delay=$startTimeString');
         sink.writeln(':Beat=${block.beatPerMeasure}');
         sink.writeln(':Split=${block.beatSplit}');
 
