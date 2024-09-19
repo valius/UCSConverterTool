@@ -192,6 +192,7 @@ class SMFile {
 
                   if (tagString.contains('#NOTES')) {
                     _processingMode = SMFileProcessingMode.chartTagRead;
+                    _currentProcessingChart = SMChart();
 
                     //Reset tag string and value
                     isLookingForTagValue = false;
@@ -239,7 +240,6 @@ class SMFile {
               }
               if (result.chartDidEnd) {
                 charts.add(_currentProcessingChart);
-                _currentProcessingChart = SMChart();
               }
               break;
             }
@@ -254,14 +254,19 @@ class SMFile {
 
               _currentProcessingMeasure = result.measure;
               _processingMode = result.currentProcessingMode;
-              currentMeasureCompareIndexForRoutine = result.measureIndex;
 
               if (result.measureDidEnd) {
-                _currentProcessingChart.getMeasureData
-                    .add(_currentProcessingMeasure);
+                _currentProcessingChart
+                        .getMeasureData[currentMeasureCompareIndexForRoutine] =
+                    _currentProcessingMeasure;
+                currentMeasureCompareIndexForRoutine++;
                 _currentProcessingMeasure = SMMeasure();
               }
-              if (result.chartDidEnd) {
+              if (result.routineChartDidEnd) {
+                //More routine charts are around, combine more, so reset index
+                currentMeasureCompareIndexForRoutine = 0;
+              } else if (result.chartDidEnd) {
+                currentMeasureCompareIndexForRoutine = 0;
                 charts.add(_currentProcessingChart);
                 _currentProcessingChart = SMChart();
               }

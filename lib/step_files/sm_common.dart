@@ -61,16 +61,14 @@ List<SMValuePair> processTagValueString(String tagValueString) {
     int endingIndex = tagValueString.length;
     int indexOfComma = tagValueString.indexOf(',', startIndex);
     if (indexOfComma < 0) {
-      String valueStr =
-          tagValueString.substring(startIndex, endingIndex);
+      String valueStr = tagValueString.substring(startIndex, endingIndex);
       pair.value = double.parse(valueStr);
       result.add(pair);
       //There are no more values left, end here
       break;
     } else {
       //More values, so continue
-      String valueStr =
-          tagValueString.substring(startIndex, indexOfComma);
+      String valueStr = tagValueString.substring(startIndex, indexOfComma);
       pair.value = double.parse(valueStr);
       result.add(pair);
       startIndex = indexOfComma + 1;
@@ -219,12 +217,12 @@ ProcessChartLineResult processChartLine(
 class ProcessRoutineChartLineResult {
   late bool measureDidEnd;
   late bool chartDidEnd;
+  late bool routineChartDidEnd;
   late SMFileProcessingMode currentProcessingMode;
-  late int measureIndex;
   late SMMeasure measure;
 
-  ProcessRoutineChartLineResult(this.measureDidEnd, this.chartDidEnd,
-      this.currentProcessingMode, this.measureIndex, this.measure);
+  ProcessRoutineChartLineResult(this.measureDidEnd, this.chartDidEnd, this.routineChartDidEnd,
+      this.currentProcessingMode, this.measure);
 }
 
 ProcessRoutineChartLineResult processSecondRoutineChartLine(
@@ -283,32 +281,28 @@ ProcessRoutineChartLineResult processSecondRoutineChartLine(
     return ProcessRoutineChartLineResult(
         true,
         false,
+        false,
         SMFileProcessingMode.routineChartRead,
-        currentMeasureIndex + 1,
         combineRoutineMeasures(existingChartMeasure, currentProcessingMeasure));
   } else if (endOfChart) {
     //End chart, so put in looking for NOTES mode
     return ProcessRoutineChartLineResult(
         true,
         true,
+        false,
         SMFileProcessingMode.tagRead,
-        0,
         combineRoutineMeasures(existingChartMeasure, currentProcessingMeasure));
   } else if (endOfRoutineChart) {
-    //Stay in routine chart reading mode, just reset index
+    //Stay in routine chart reading mode
     return ProcessRoutineChartLineResult(
         true,
         false,
+        true,
         SMFileProcessingMode.routineChartRead,
-        0,
         combineRoutineMeasures(existingChartMeasure, currentProcessingMeasure));
   }
 
   //Still more lines to read, continue staying in measure
-  return ProcessRoutineChartLineResult(
-      false,
-      false,
-      SMFileProcessingMode.routineChartRead,
-      currentMeasureIndex,
-      currentProcessingMeasure);
+  return ProcessRoutineChartLineResult(false, false, false,
+      SMFileProcessingMode.routineChartRead, currentProcessingMeasure);
 }
