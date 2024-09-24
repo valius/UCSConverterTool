@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:ucsconvertertool/step_files/andamiro_common.dart';
 import 'package:ucsconvertertool/step_files/sm_common.dart';
 import 'package:ucsconvertertool/step_files/ucs_file.dart';
@@ -184,7 +182,7 @@ bool checkIfStopMustBeQueued(
 
   while (true) {
     //Depending on density of number of changes, we may need to double measure line count
-    var locationSet = HashSet<int>();
+    var locationSet = <int>{};
     bool needIncreaseMeasureLineCount = false;
 
     for (int i = index + 1; i < chartChangesCount; i++) {
