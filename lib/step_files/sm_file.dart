@@ -47,21 +47,11 @@ class SMFile {
   late String _filename;
   SMFileProcessingMode _processingMode = SMFileProcessingMode.tagRead;
 
-  String readLineUntilDelimiter(String delimiter) {
-    String result = "";
-
-    return result;
-  }
-
-  void processSMFileLine() {
-    //string tag = _fileReadStream.r
-  }
-
   SMFile(String filename) {
     _filename = filename;
   }
 
-  void processSMFileTag(String tag, String tagValue) {
+  void _processSMFileTag(String tag, String tagValue) {
     if (!kSMFileTags.contains(tag)) {
       //Ignore unsupported tags
       return;
@@ -86,7 +76,7 @@ class SMFile {
     }
   }
 
-  void processChartTagLine(String inLine) {
+  void _processChartTagLine(String inLine) {
     if (inLine.isEmpty) {
       //Skip empty chart tag line
       return;
@@ -160,8 +150,7 @@ class SMFile {
       String tagString = "";
       String valueString = "";
       var isLookingForTagValue = false;
-      int currentMeasureCompareIndexForRoutine =
-          0; //Variable only used to help combine routine charts into 1 chart
+      int currentMeasureCompareIndexForRoutine = 0; //Variable only used to help combine routine charts into 1 chart
 
       await for (var line in fileReadStream) {
         switch (_processingMode) {
@@ -173,7 +162,7 @@ class SMFile {
                   valueString += line.substring(0, indexOfSemicolon);
 
                   //Process tag and value
-                  processSMFileTag(tagString, valueString);
+                  _processSMFileTag(tagString, valueString);
 
                   //Reset to initial state
                   //Reset tag string and value
@@ -203,7 +192,7 @@ class SMFile {
                         line.substring(indexOfColon + 1, indexOfSemicolon);
 
                     //Process tag and value
-                    processSMFileTag(tagString, valueString);
+                    _processSMFileTag(tagString, valueString);
 
                     //Reset to initial state
                     //Reset tag string and value
@@ -224,7 +213,7 @@ class SMFile {
             }
           case SMFileProcessingMode.chartTagRead:
             {
-              processChartTagLine(line);
+              _processChartTagLine(line);
               break;
             }
           case SMFileProcessingMode.chartRead:

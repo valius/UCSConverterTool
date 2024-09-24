@@ -11,7 +11,7 @@ import "package:path/path.dart" as p;
 class SMConverter implements IConverter {
   late String _filename;
 
-  UCSFile convertSMChartToUCS(
+  UCSFile _convertSMChartToUCS(
       String outputFileName, SMFileMetadata smFileData, SMChart chart) {
     var resultUCS = UCSFile(outputFileName);
     switch (chart.getChartType) {
@@ -247,7 +247,7 @@ class SMConverter implements IConverter {
 
 try {
     for (var chart in smFile.charts) {
-      var ucsFile = convertSMChartToUCS(
+      var ucsFile = _convertSMChartToUCS(
           "${p.withoutExtension(_filename)}-${chart.difficulty}.ucs", smFile.metadata, chart);
 
       result.add(ucsFile);
