@@ -2,7 +2,6 @@ import 'dart:developer';
 
 import 'package:ucsconvertertool/converters/i_converter.dart';
 import 'package:ucsconvertertool/converters/sm_converter_common.dart';
-import 'package:ucsconvertertool/step_files/andamiro_common.dart';
 import 'package:ucsconvertertool/step_files/sm_common.dart';
 import 'package:ucsconvertertool/step_files/sm_file.dart';
 import 'package:ucsconvertertool/step_files/ucs_file.dart';
@@ -55,7 +54,7 @@ class SMConverter implements IConverter {
       List<SMConverterHelperTuple> bpmsWithinMeasure;
       List<SMConverterHelperTuple> stopsWithinMeasure;
 
-//Assume 4/4 time, but maybe we'll support other time signatures someday?
+      //Assume 4/4 time, but maybe we'll support other time signatures someday?
       int origMeasureBeatsplit = currentMeasure.measureLines.length ~/ 4;
       int measureBeatSplitFactor = 1;
       while (true) {
@@ -99,8 +98,10 @@ class SMConverter implements IConverter {
       int beatSplit = currentMeasure.measureLines.length ~/ 4;
       int numberOfMeasureLinesProcessed = 0;
 
-      for (int i = 0; i < currentMeasure.measureLines.length; i++) {
-        SMMeasureLine line = currentMeasure.measureLines[i];
+      for (int measureLineIndex = 0;
+          measureLineIndex < currentMeasure.measureLines.length;
+          measureLineIndex++) {
+        SMMeasureLine line = currentMeasure.measureLines[measureLineIndex];
         bool stopQueued = false;
         bool bpmChanged = false;
         (bpmChanged, resultUCS, currentUcsBlock) =
@@ -119,7 +120,10 @@ class SMConverter implements IConverter {
           stopQueued = true;
         }
 
-        if ((i == 0 && lastMeasureBeatSplit > 0 && beatSplit != lastMeasureBeatSplit) || stopQueued) {
+        if ((measureLineIndex == 0 &&
+                lastMeasureBeatSplit > 0 &&
+                beatSplit != lastMeasureBeatSplit) ||
+            stopQueued) {
           //The beat split of this measure is different than last one, so create new block
           if (currentUcsBlock != null && currentUcsBlock.lines.isNotEmpty) {
             resultUCS.getBlocks.add(currentUcsBlock);
@@ -138,58 +142,8 @@ class SMConverter implements IConverter {
           currentUcsBlock.startTime = 0;
         }
 
-        UCSBlockLine ucsLine = UCSBlockLine();
-
-        if (chart.getChartType == SMChartType.halfDouble) {
-          //Pad with 2 0s on left side
-          ucsLine.notes.add(AMNoteType.none);
-          ucsLine.notes.add(AMNoteType.none);
-        }
-
-        for (int j = 0; j < line.lineNotes.length; j++) {
-          switch (line.lineNotes[j]) {
-            case SMNoteType.none:
-              {
-                if (isHolding[j]) {
-                  //Hold transition notes are not specified in SM format, so you need to check if hold in hold array is on
-                  ucsLine.notes.add(AMNoteType.hold);
-                } else {
-                  ucsLine.notes.add(AMNoteType.none);
-                }
-                break;
-              }
-            case SMNoteType.normal:
-              ucsLine.notes.add(AMNoteType.regular);
-              break;
-            case SMNoteType.freezeBegin:
-            case SMNoteType.rollBegin:
-              {
-                //Treat rolls as if they are freezes for UCS
-                isHolding[j] = true;
-                ucsLine.notes.add(AMNoteType.holdBegin);
-                break;
-              }
-            case SMNoteType.freezeOrRollEnd:
-              {
-                //Turn off holding on freeze/roll end
-                isHolding[j] = false;
-                ucsLine.notes.add(AMNoteType.holdEnd);
-                break;
-              }
-            default:
-              {
-                //Unknown note type, so default to none
-                ucsLine.notes.add(AMNoteType.none);
-                break;
-              }
-          }
-        }
-
-        if (chart.getChartType == SMChartType.halfDouble) {
-          //Pad with 2 0s on right side
-          ucsLine.notes.add(AMNoteType.none);
-          ucsLine.notes.add(AMNoteType.none);
-        }
+        UCSBlockLine ucsLine =
+            convertSMLineToUCSLine(line, chart.getChartType, isHolding);
 
         //Add line
         currentUcsBlock?.lines.add(ucsLine);
@@ -245,16 +199,18 @@ class SMConverter implements IConverter {
 
     List<UCSFile> result = [];
 
-try {
-    for (var chart in smFile.charts) {
-      var ucsFile = _convertSMChartToUCS(
-          "${p.withoutExtension(_filename)}-${chart.difficulty}.ucs", smFile.metadata, chart);
+    try {
+      for (var chart in smFile.charts) {
+        var ucsFile = _convertSMChartToUCS(
+            "${p.withoutExtension(_filename)}-${chart.difficulty}.ucs",
+            smFile.metadata,
+            chart);
 
-      result.add(ucsFile);
+        result.add(ucsFile);
+      }
+    } catch (e) {
+      log("Encountered error $e");
     }
-} catch(e) {
-  log("Encountered error $e");
-}
 
     return result;
   }

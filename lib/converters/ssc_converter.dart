@@ -2,7 +2,6 @@ import 'dart:developer';
 
 import 'package:ucsconvertertool/converters/i_converter.dart';
 import 'package:ucsconvertertool/converters/sm_converter_common.dart';
-import 'package:ucsconvertertool/step_files/andamiro_common.dart';
 import 'package:ucsconvertertool/step_files/sm_common.dart';
 import 'package:ucsconvertertool/step_files/ssc_file.dart';
 import 'package:ucsconvertertool/step_files/ucs_file.dart';
@@ -65,7 +64,18 @@ class SSCConverter implements IConverter {
     int lastBeatSplit = -1;
 
     //SSC files don't have Hold "Middle"/Continue Notes like Andamiro formats, so keep track if a lane is in the middle of a hold
-    List<bool> isHolding = [false, false, false, false, false, false, false, false, false, false];
+    List<bool> isHolding = [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ];
     int targetTickCount = -1;
 
     while (index < chart.getMeasureData.length) {
@@ -82,12 +92,45 @@ class SSCConverter implements IConverter {
       int measureBeatSplitFactor = 1;
       while (true) {
         //Check for upcoming BPM pairs within this measure
-        (bpmsWithinMeasure, measureBeatSplitFactor, currentMeasure, measureDirty) = createListOfTuplesWithinMeasure(
-          currentBpmIndex, origMeasureBeatsplit, measureBeatSplitFactor, bpms, numberOfBeatsProcessed, currentMeasure, measureDirty);
-        (stopsWithinMeasure, measureBeatSplitFactor, currentMeasure, measureDirty) = createListOfTuplesWithinMeasure(
-          currentStopIndex, origMeasureBeatsplit, measureBeatSplitFactor, stops, numberOfBeatsProcessed, currentMeasure, measureDirty);
-        (tickCountsWithinMeasure, measureBeatSplitFactor, currentMeasure, measureDirty) = createListOfTuplesWithinMeasure(
-          currentTickCountIndex, origMeasureBeatsplit, measureBeatSplitFactor, tickCounts, numberOfBeatsProcessed, currentMeasure, measureDirty);
+        (
+          bpmsWithinMeasure,
+          measureBeatSplitFactor,
+          currentMeasure,
+          measureDirty
+        ) = createListOfTuplesWithinMeasure(
+            currentBpmIndex,
+            origMeasureBeatsplit,
+            measureBeatSplitFactor,
+            bpms,
+            numberOfBeatsProcessed,
+            currentMeasure,
+            measureDirty);
+        (
+          stopsWithinMeasure,
+          measureBeatSplitFactor,
+          currentMeasure,
+          measureDirty
+        ) = createListOfTuplesWithinMeasure(
+            currentStopIndex,
+            origMeasureBeatsplit,
+            measureBeatSplitFactor,
+            stops,
+            numberOfBeatsProcessed,
+            currentMeasure,
+            measureDirty);
+        (
+          tickCountsWithinMeasure,
+          measureBeatSplitFactor,
+          currentMeasure,
+          measureDirty
+        ) = createListOfTuplesWithinMeasure(
+            currentTickCountIndex,
+            origMeasureBeatsplit,
+            measureBeatSplitFactor,
+            tickCounts,
+            numberOfBeatsProcessed,
+            currentMeasure,
+            measureDirty);
 
         if (measureDirty) {
           //Stops changed the measure, have to recalculate bpms
@@ -106,7 +149,9 @@ class SSCConverter implements IConverter {
 
         bool tickcountCheckResult = false;
         (tickcountCheckResult, targetTickCount) = _tickCountChangeIfNeeded(
-          numberOfMeasureLinesProcessed, targetTickCount, tickCountsWithinMeasure);
+            numberOfMeasureLinesProcessed,
+            targetTickCount,
+            tickCountsWithinMeasure);
         if (tickcountCheckResult) {
           currentTickCountIndex++;
         }
@@ -124,8 +169,14 @@ class SSCConverter implements IConverter {
 
         bool stopQueued = false;
         bool bpmChanged = false;
-        (bpmChanged, resultUCS, currentUcsBlock) = changeUCSBlockIfNeededForBPMChange(
-          numberOfMeasureLinesProcessed, resultBeatSplit, sscFileData.offset, bpmsWithinMeasure, resultUCS, currentUcsBlock);
+        (bpmChanged, resultUCS, currentUcsBlock) =
+            changeUCSBlockIfNeededForBPMChange(
+                numberOfMeasureLinesProcessed,
+                resultBeatSplit,
+                sscFileData.offset,
+                bpmsWithinMeasure,
+                resultUCS,
+                currentUcsBlock);
         if (bpmChanged) {
           currentBpmIndex++;
         }
@@ -134,7 +185,8 @@ class SSCConverter implements IConverter {
           stopQueued = true;
         }
 
-        if ((lastBeatSplit > 0 && resultBeatSplit != lastBeatSplit) || stopQueued) {
+        if ((lastBeatSplit > 0 && resultBeatSplit != lastBeatSplit) ||
+            stopQueued) {
           //The beat split of this measure is different than last one, so create new block
           if (currentUcsBlock != null && currentUcsBlock.lines.isNotEmpty) {
             resultUCS.getBlocks.add(currentUcsBlock);
@@ -153,58 +205,8 @@ class SSCConverter implements IConverter {
           currentUcsBlock.startTime = 0;
         }
 
-        UCSBlockLine ucsLine = UCSBlockLine();
-
-        if (chart.getChartType == SMChartType.halfDouble) {
-          //Pad with 2 0s on left side
-          ucsLine.notes.add(AMNoteType.none);
-          ucsLine.notes.add(AMNoteType.none);
-        }
-
-        for (int j = 0; j < line.lineNotes.length; j++) {
-          switch (line.lineNotes[j]) {
-            case SMNoteType.none:
-              {
-                if (isHolding[j]) {
-                  //Hold transition notes are not specified in SM format, so you need to check if hold in hold array is on
-                  ucsLine.notes.add(AMNoteType.hold);
-                } else {
-                  ucsLine.notes.add(AMNoteType.none);
-                }
-                break;
-              }
-            case SMNoteType.normal:
-              ucsLine.notes.add(AMNoteType.regular);
-              break;
-            case SMNoteType.freezeBegin:
-            case SMNoteType.rollBegin:
-              {
-                //Treat rolls as if they are freezes for UCS
-                isHolding[j] = true;
-                ucsLine.notes.add(AMNoteType.holdBegin);
-                break;
-              }
-            case SMNoteType.freezeOrRollEnd:
-              {
-                //Turn off holding on freeze/roll end
-                isHolding[j] = false;
-                ucsLine.notes.add(AMNoteType.holdEnd);
-                break;
-              }
-            default:
-              {
-                //Unknown note type, so default to none
-                ucsLine.notes.add(AMNoteType.none);
-                break;
-              }
-          }
-        }
-
-        if (chart.getChartType == SMChartType.halfDouble) {
-          //Pad with 2 0s on right side
-          ucsLine.notes.add(AMNoteType.none);
-          ucsLine.notes.add(AMNoteType.none);
-        }
+        UCSBlockLine ucsLine =
+            convertSMLineToUCSLine(line, chart.getChartType, isHolding);
 
         //Add line
         currentUcsBlock?.lines.add(ucsLine);
@@ -212,8 +214,15 @@ class SSCConverter implements IConverter {
         //Process stops
         if (stopQueued) {
           bool stopResult = false;
-          (stopResult, resultUCS, currentUcsBlock) = changeUCSBlockIfNeededForStop(
-            numberOfMeasureLinesProcessed, resultBeatSplit, bpms[currentBpmIndex].value, isHolding, stopsWithinMeasure, resultUCS, currentUcsBlock);
+          (stopResult, resultUCS, currentUcsBlock) =
+              changeUCSBlockIfNeededForStop(
+                  numberOfMeasureLinesProcessed,
+                  resultBeatSplit,
+                  bpms[currentBpmIndex].value,
+                  isHolding,
+                  stopsWithinMeasure,
+                  resultUCS,
+                  currentUcsBlock);
           if (stopResult) {
             currentStopIndex++;
           }
@@ -222,34 +231,8 @@ class SSCConverter implements IConverter {
         int numLinesToInsert = (resultBeatSplit ~/ beatSplit) - 1;
         //Finished adding the line, so add padding lines to maintain the tickcount
         for (int k = 0; k < numLinesToInsert; k++) {
-          UCSBlockLine paddingLine = UCSBlockLine();
-
-          if (chart.getChartType == SMChartType.halfDouble) {
-            //Pad with 2 0s on left side
-            paddingLine.notes.add(AMNoteType.none);
-            paddingLine.notes.add(AMNoteType.none);
-          }
-
-          int numberOfNotesPerLine = 5;
-          if (chart.getChartType == SMChartType.double) {
-            numberOfNotesPerLine = 10;
-          } else if (chart.getChartType == SMChartType.halfDouble) {
-            numberOfNotesPerLine = 6;
-          }
-
-          for (int l = 0; l < numberOfNotesPerLine; l++) {
-            if (isHolding[l]) {
-              paddingLine.notes.add(AMNoteType.hold);
-            } else {
-              paddingLine.notes.add(AMNoteType.none);
-            }
-          }
-
-          if (chart.getChartType == SMChartType.halfDouble) {
-            //Pad with 2 0s on right side
-            paddingLine.notes.add(AMNoteType.none);
-            paddingLine.notes.add(AMNoteType.none);
-          }
+          UCSBlockLine paddingLine =
+              createPaddingLine(chart.getChartType, isHolding);
 
           currentUcsBlock?.lines.add(paddingLine);
         }
