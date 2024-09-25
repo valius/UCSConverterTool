@@ -239,3 +239,93 @@ bool checkIfStopMustBeQueued(
 
   return (result, measureBeatSplitFactor, measure, measureDirty);
 }
+
+UCSBlockLine convertSMLineToUCSLine(
+    SMMeasureLine line, SMChartType chartType, List<bool> isHolding) {
+  UCSBlockLine ucsLine = UCSBlockLine();
+  if (chartType == SMChartType.halfDouble) {
+    //Pad with 2 0s on left side
+    ucsLine.notes.add(AMNoteType.none);
+    ucsLine.notes.add(AMNoteType.none);
+  }
+
+  for (int j = 0; j < line.lineNotes.length; j++) {
+    switch (line.lineNotes[j]) {
+      case SMNoteType.none:
+        {
+          if (isHolding[j]) {
+            //Hold transition notes are not specified in SM format, so you need to check if hold in hold array is on
+            ucsLine.notes.add(AMNoteType.hold);
+          } else {
+            ucsLine.notes.add(AMNoteType.none);
+          }
+          break;
+        }
+      case SMNoteType.normal:
+        ucsLine.notes.add(AMNoteType.regular);
+        break;
+      case SMNoteType.freezeBegin:
+      case SMNoteType.rollBegin:
+        {
+          //Treat rolls as if they are freezes for UCS
+          isHolding[j] = true;
+          ucsLine.notes.add(AMNoteType.holdBegin);
+          break;
+        }
+      case SMNoteType.freezeOrRollEnd:
+        {
+          //Turn off holding on freeze/roll end
+          isHolding[j] = false;
+          ucsLine.notes.add(AMNoteType.holdEnd);
+          break;
+        }
+      default:
+        {
+          //Unknown note type, so default to none
+          ucsLine.notes.add(AMNoteType.none);
+          break;
+        }
+    }
+  }
+
+  if (chartType == SMChartType.halfDouble) {
+    //Pad with 2 0s on right side
+    ucsLine.notes.add(AMNoteType.none);
+    ucsLine.notes.add(AMNoteType.none);
+  }
+
+  return ucsLine;
+}
+
+UCSBlockLine createPaddingLine(SMChartType chartType, List<bool> isHolding) {
+  UCSBlockLine paddingLine = UCSBlockLine();
+
+  if (chartType == SMChartType.halfDouble) {
+    //Pad with 2 0s on left side
+    paddingLine.notes.add(AMNoteType.none);
+    paddingLine.notes.add(AMNoteType.none);
+  }
+
+  int numberOfNotesPerLine = 5;
+  if (chartType == SMChartType.double) {
+    numberOfNotesPerLine = 10;
+  } else if (chartType == SMChartType.halfDouble) {
+    numberOfNotesPerLine = 6;
+  }
+
+  for (int l = 0; l < numberOfNotesPerLine; l++) {
+    if (isHolding[l]) {
+      paddingLine.notes.add(AMNoteType.hold);
+    } else {
+      paddingLine.notes.add(AMNoteType.none);
+    }
+  }
+
+  if (chartType == SMChartType.halfDouble) {
+    //Pad with 2 0s on right side
+    paddingLine.notes.add(AMNoteType.none);
+    paddingLine.notes.add(AMNoteType.none);
+  }
+
+  return paddingLine;
+}
