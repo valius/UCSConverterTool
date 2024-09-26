@@ -31,6 +31,10 @@ class UCSFile {
     return _blocks;
   }
 
+  String get getFilename {
+    return _filename;
+  }
+
   //Default to invalid
   UCSChartType chartType = UCSChartType.invalid;
 
