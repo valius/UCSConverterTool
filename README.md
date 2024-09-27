@@ -1,16 +1,28 @@
 # ucsconvertertool
 
-A new Flutter project.
+This program is a tool for converting various step formats to the UCS format used by Pump It Up arcade games.
 
-## Getting Started
+## Please Read Before Use
 
-This project is a starting point for a Flutter application.
+This tool is still a work in progress, and improvements and support for more formats are planned.
 
-A few resources to get you started if this is your first Flutter project:
+The following formats are currently supported:
+- .SM files (pre-Stepmania 5)
+- .SSC files (Stepmania 5 and beyond)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Support for the following formats are planned:
+- .KSF files (Kick It Up)
+- .SMA files
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+SM file features supported:
+- BPM changes
+- Stops (through some trickery with slow BPMs and start times)
+
+No other features are supported due to the limitations of the UCS file format.
+
+SSC file features supported:
+- BPM changes
+- Stops (through some trickery with slow BPMs and start times)
+- Tickcount/Beatsplit changes
+
+No other features are supported due to the limitations of the UCS file format.
