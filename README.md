@@ -2,6 +2,12 @@
 
 This program is a tool for converting various step formats to the UCS format used by Pump It Up arcade games.
 
+## Running in Linux
+
+You may need to install the following packages if on Debian distribution to work:
+
+sudo apt-get install libgtk-3-0 libblkid1 liblzma5
+
 ## Please Read Before Use
 
 This tool is still a work in progress, and improvements and support for more formats are planned.
