@@ -40,6 +40,12 @@ class _ConvertViewState extends State<ConvertView> {
   }
 
   void _convertfile() async {
+    if (_controller.text.isEmpty) {
+      setState(() {
+        _statusText = "No file or directory seleced!";
+      });
+      return;
+    }
     setState(() {
       _convertButtonEnabled = false;
       _statusText = "Converting $_controller.text";
