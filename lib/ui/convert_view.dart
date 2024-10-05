@@ -2,6 +2,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:ucsconvertertool/generators/converter_generator.dart';
 import "package:path/path.dart" as p;
+import 'package:ucsconvertertool/helpers/path_helpers.dart';
+import 'package:ucsconvertertool/step_files/ucs_file.dart';
 
 class ConvertView extends StatefulWidget {
   const ConvertView({super.key, required this.title});
@@ -23,13 +25,14 @@ class ConvertView extends StatefulWidget {
 
 class _ConvertViewState extends State<ConvertView> {
   final _controller = TextEditingController();
+  final List<String> _supportedExtensions = ['sm', 'ssc'];
   String _statusText = "Idle";
   bool _convertButtonEnabled = true;
 
   void _openFileDialog() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['sm', 'ssc'],
+      allowedExtensions: _supportedExtensions,
     );
 
     if (result != null) {
@@ -42,31 +45,44 @@ class _ConvertViewState extends State<ConvertView> {
   void _convertfile() async {
     if (_controller.text.isEmpty) {
       setState(() {
-        _statusText = "No file or directory seleced!";
+        _statusText = "No file or directory selected!";
       });
       return;
     }
     setState(() {
       _convertButtonEnabled = false;
-      _statusText = "Converting $_controller.text";
+      _statusText = "Generating list of supported files from input ${_controller.text}";
     });
-    //TODO(ktan): Process directory, only file logic for now
-    var converter = ConverterGenerator.createConverter(_controller.text);
-    var ucsFiles = await converter.convert();
 
-    String resultString = "Generated ";
-    for (var ucsFile in ucsFiles) {
-      ucsFile.outputToFile();
+    var listFiles =
+        await getListOfFilesFromPath(_controller.text, _supportedExtensions);
 
-      String filenameOnly = p.basename(ucsFile.getFilename);
-      resultString += "$filenameOnly, ";
+    List<UCSFile> ucsFiles = [];
+    for (var file in listFiles) {
+      setState(() {
+        _statusText = "Generating UCS files from $file...";
+      });
+
+      var converter = ConverterGenerator.createConverter(file);
+      ucsFiles += await converter.convert();
+
+      String resultString = "Generated ";
+      for (var ucsFile in ucsFiles) {
+        ucsFile.outputToFile();
+
+        String filenameOnly = p.basename(ucsFile.getFilename);
+        resultString += "$filenameOnly, ";
+      }
+
+      resultString += "in the folder ${p.dirname(_controller.text)}";
+
+      setState(() {
+        _statusText = resultString;
+      });
     }
-
-    resultString += "in the folder ${p.dirname(_controller.text)}";
 
     setState(() {
       _convertButtonEnabled = true;
-      _statusText = resultString;
     });
   }
 
