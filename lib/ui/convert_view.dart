@@ -27,9 +27,13 @@ class _ConvertViewState extends State<ConvertView> {
   final _controller = TextEditingController();
   final List<String> _supportedExtensions = ['sm', 'ssc'];
   String _statusText = "Idle";
-  bool _convertButtonEnabled = true;
+  bool _buttonsEnabled = true;
 
   void _openFileDialog() async {
+    setState(() {
+      _buttonsEnabled = false;
+    });
+
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: _supportedExtensions,
@@ -40,6 +44,28 @@ class _ConvertViewState extends State<ConvertView> {
         _controller.text = result.files.single.path!;
       });
     }
+
+    setState(() {
+      _buttonsEnabled = true;
+    });
+  }
+
+  void _openDirectoryDialog() async {
+    setState(() {
+      _buttonsEnabled = false;
+    });
+
+    String? result = await FilePicker.platform.getDirectoryPath();
+
+    if (result != null) {
+      setState(() {
+        _controller.text = result;
+      });
+    }
+
+    setState(() {
+      _buttonsEnabled = true;
+    });
   }
 
   void _convertfile() async {
@@ -50,7 +76,7 @@ class _ConvertViewState extends State<ConvertView> {
       return;
     }
     setState(() {
-      _convertButtonEnabled = false;
+      _buttonsEnabled = false;
       _statusText = "Generating list of supported files from input ${_controller.text}";
     });
 
@@ -82,7 +108,7 @@ class _ConvertViewState extends State<ConvertView> {
     }
 
     setState(() {
-      _convertButtonEnabled = true;
+      _buttonsEnabled = true;
     });
   }
 
@@ -148,8 +174,8 @@ class _ConvertViewState extends State<ConvertView> {
                       ),
                     ),
                   ),
-                  onPressed: _openFileDialog,
-                  child: const Text('Open'),
+                  onPressed: _buttonsEnabled? _openFileDialog : null,
+                  child: const Text('Open File'),
                 ),
                 TextButton(
                   style: TextButton.styleFrom(
@@ -161,7 +187,20 @@ class _ConvertViewState extends State<ConvertView> {
                       ),
                     ),
                   ),
-                  onPressed: _convertButtonEnabled ? _convertfile : null,
+                  onPressed: _buttonsEnabled? _openDirectoryDialog : null,
+                  child: const Text('Open Folder'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                      side: BorderSide(
+                        color: Colors.black,
+                        width: 5,
+                      ),
+                    ),
+                  ),
+                  onPressed: _buttonsEnabled ? _convertfile : null,
                   child: const Text('Convert'),
                 ),
               ],
