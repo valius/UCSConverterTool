@@ -46,6 +46,7 @@ class SSCConverter implements IConverter {
       case SMChartType.double:
       case SMChartType.halfDouble:
       case SMChartType.routine:
+      case SMChartType.couple:
         resultUCS.chartType = UCSChartType.double;
         break;
       default:

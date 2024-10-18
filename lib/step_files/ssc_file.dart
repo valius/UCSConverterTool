@@ -123,6 +123,11 @@ class SSCFile {
                 _currentProcessingChart.setChartType = SMChartType.routine;
                 break;
               }
+            case "pump-couple":
+              {
+                _currentProcessingChart.setChartType = SMChartType.couple;
+                break;
+              }
             default:
               {
                 _currentProcessingChart.setChartType = SMChartType.invalid;
@@ -146,6 +151,9 @@ class SSCFile {
               break;
             case SMChartType.routine:
               chartType = "routine";
+              break;
+            case SMChartType.couple:
+              chartType = "couple";
               break;
             default:
               break;
