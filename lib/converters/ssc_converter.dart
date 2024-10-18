@@ -1,4 +1,5 @@
-import 'dart:developer';
+import 'dart:developer' as dev;
+import 'dart:math';
 
 import 'package:ucsconvertertool/converters/i_converter.dart';
 import 'package:ucsconvertertool/converters/sm_converter_common.dart';
@@ -143,7 +144,8 @@ class SSCConverter implements IConverter {
       }
 
       //Beatsplit will be number of lines in measure divided by 4, assume 4/4 time for now
-      int beatSplit = currentMeasure.measureLines.length ~/ 4;
+      //Also make sure beatsplit is not below 1, 1 will be defaulted for measures with less than 4 lines (end measures)
+      int beatSplit = max(currentMeasure.measureLines.length ~/ 4, 1);
       int numberOfMeasureLinesProcessed = 0;
       for (int i = 0; i < currentMeasure.measureLines.length; i++) {
         SMMeasureLine line = currentMeasure.measureLines[i];
@@ -278,7 +280,7 @@ class SSCConverter implements IConverter {
         result.add(ucsFile);
       }
     } catch (e) {
-      log("Encountered error $e");
+      dev.log("Encountered error $e");
     }
 
     return result;
