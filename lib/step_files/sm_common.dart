@@ -26,7 +26,7 @@ enum SMFileProcessingMode {
   failed
 }
 
-enum SMChartType { single, double, halfDouble, routine, invalid }
+enum SMChartType { single, double, halfDouble, routine, couple, invalid }
 
 abstract class ISMChart {
   SMChartType get getChartType;
@@ -161,35 +161,47 @@ ProcessChartLineResult processChartLine(
   Set<String> charsToTrim = {'\r', '\n', ' ', ',', ';', '&'};
   trimmedLine = trimmedLine.trimUsingCharacterSet(charsToTrim);
   Characters arrayOfChars = Characters(trimmedLine);
+  bool isReadingQuestNote = false;
   for (int i = 0; i < arrayOfChars.length; ++i) {
     SMNoteType noteType;
     var currentChar = arrayOfChars.elementAt(i);
-    if (currentChar == '/') {
-      //Found comment, stop
-      break;
-    } else if (currentChar == '{') {
-      //Found quest related line, stop because UCS doesn't support it
-      break;
-    }
+    if (isReadingQuestNote) {
+      if (currentChar == '}') {
+        //Add empty note to replace the quest note because UCS doesn't support it
+        tempLine.lineNotes.add(SMNoteType.none);
+        isReadingQuestNote = false;
+      } else {
+        continue;
+      }
+    } else {
+      if (currentChar == '/') {
+        //Found comment, stop
+        break;
+      } else if (currentChar == '{') {
+        //Found quest related note, just read to the end and treat it as an empty note because UCS doesn't support it
+        isReadingQuestNote = true;
+        continue;
+      }
 
-    switch (currentChar) {
-      case '1':
-        noteType = SMNoteType.normal;
-        break;
-      case '2':
-        noteType = SMNoteType.freezeBegin;
-        break;
-      case '3':
-        noteType = SMNoteType.freezeOrRollEnd;
-        break;
-      case '4':
-        noteType = SMNoteType.rollBegin;
-        break;
-      default:
-        noteType = SMNoteType.none; //0 or unknown/unsupported in PIU arcade
-        break;
+      switch (currentChar) {
+        case '1':
+          noteType = SMNoteType.normal;
+          break;
+        case '2':
+          noteType = SMNoteType.freezeBegin;
+          break;
+        case '3':
+          noteType = SMNoteType.freezeOrRollEnd;
+          break;
+        case '4':
+          noteType = SMNoteType.rollBegin;
+          break;
+        default:
+          noteType = SMNoteType.none; //0 or unknown/unsupported in PIU arcade
+          break;
+      }
+      tempLine.lineNotes.add(noteType);
     }
-    tempLine.lineNotes.add(noteType);
   }
 
   if (tempLine.lineNotes.isNotEmpty) {
@@ -241,35 +253,46 @@ ProcessRoutineChartLineResult processSecondRoutineChartLine(
   Set<String> charsToTrim = {'\r', '\n', ' ', ',', ';', '&'};
   trimmedLine = trimmedLine.trimUsingCharacterSet(charsToTrim);
   Characters arrayOfChars = Characters(trimmedLine);
+  bool isReadingQuestNote = false;
   for (int i = 0; i < arrayOfChars.length; ++i) {
     SMNoteType noteType;
     var currentChar = arrayOfChars.elementAt(i);
-    if (currentChar == '/') {
-      //Found comment, stop
-      break;
-    } else if (currentChar == '{') {
-      //Found quest related line, stop because UCS doesn't support it
-      break;
-    }
+    if (isReadingQuestNote) {
+      if (currentChar == '}') {
+        //Add empty note to replace the quest note because UCS doesn't support it
+        tempLine.lineNotes.add(SMNoteType.none);
+        isReadingQuestNote = false;
+      } else {
+        continue;
+      }
+    } else {
+      if (currentChar == '/') {
+        //Found comment, stop
+        break;
+      } else if (currentChar == '{') {
+        //Found quest related note, just read to the end and treat it as an empty note because UCS doesn't support it
+        isReadingQuestNote = true;
+      }
 
-    switch (currentChar) {
-      case '1':
-        noteType = SMNoteType.normal;
-        break;
-      case '2':
-        noteType = SMNoteType.freezeBegin;
-        break;
-      case '3':
-        noteType = SMNoteType.freezeOrRollEnd;
-        break;
-      case '4':
-        noteType = SMNoteType.rollBegin;
-        break;
-      default:
-        noteType = SMNoteType.none; //0 or unknown/unsupported in PIU arcade
-        break;
+      switch (currentChar) {
+        case '1':
+          noteType = SMNoteType.normal;
+          break;
+        case '2':
+          noteType = SMNoteType.freezeBegin;
+          break;
+        case '3':
+          noteType = SMNoteType.freezeOrRollEnd;
+          break;
+        case '4':
+          noteType = SMNoteType.rollBegin;
+          break;
+        default:
+          noteType = SMNoteType.none; //0 or unknown/unsupported in PIU arcade
+          break;
+      }
+      tempLine.lineNotes.add(noteType);
     }
-    tempLine.lineNotes.add(noteType);
   }
 
   if (tempLine.lineNotes.isNotEmpty) {

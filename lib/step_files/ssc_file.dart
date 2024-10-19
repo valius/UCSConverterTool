@@ -24,10 +24,10 @@ const Set<String> kSSCChartTags = {
 };
 
 class SSCFileMetaData {
-  late double offset;
-  late List<SMValuePair> bpms;
-  late List<SMValuePair> stops;
-  late List<SMValuePair> tickCounts;
+  double offset = 0;
+  List<SMValuePair> bpms = [];
+  List<SMValuePair> stops = [];
+  List<SMValuePair> tickCounts = [];
 }
 
 class SSCChart implements ISMChart {
@@ -123,6 +123,11 @@ class SSCFile {
                 _currentProcessingChart.setChartType = SMChartType.routine;
                 break;
               }
+            case "pump-couple":
+              {
+                _currentProcessingChart.setChartType = SMChartType.couple;
+                break;
+              }
             default:
               {
                 _currentProcessingChart.setChartType = SMChartType.invalid;
@@ -146,6 +151,9 @@ class SSCFile {
               break;
             case SMChartType.routine:
               chartType = "routine";
+              break;
+            case SMChartType.couple:
+              chartType = "couple";
               break;
             default:
               break;
