@@ -24,10 +24,10 @@ const Set<String> kSSCChartTags = {
 };
 
 class SSCFileMetaData {
-  late double offset;
-  late List<SMValuePair> bpms;
-  late List<SMValuePair> stops;
-  late List<SMValuePair> tickCounts;
+  double offset = 0;
+  List<SMValuePair> bpms = [];
+  List<SMValuePair> stops = [];
+  List<SMValuePair> tickCounts = [];
 }
 
 class SSCChart implements ISMChart {
