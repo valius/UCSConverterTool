@@ -135,12 +135,20 @@ class _ConvertViewState extends State<ConvertView> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
+      body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Flexible(
+      child: 
+            FractionallySizedBox(
+          //widthFactor: 0.9, // 80% of the parent width
+          heightFactor: 0.5, // 50% of the parent height
+          child: Scrollbar(
+                          thumbVisibility: true,
+                          controller: _interfaceElementsScrollController,
+                          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
             Text(
               'Choose a file or directory',
               style: Theme.of(context).textTheme.headlineMedium,
@@ -195,20 +203,30 @@ class _ConvertViewState extends State<ConvertView> {
                   child: const Text('Convert'),
                 ),
               ],
-            ),
-            SizedBox(
-                height: 50,
-                child: Scrollbar(
-                      thumbVisibility: true,
-                      controller: _firstController,
-                      child: ListView(
-                        controller: _firstController,
-                    children: [
-                      Text(_statusText)
-          ])))
+            )
           ],
         ),
-      ),
+          ),
+            ),
+          ),
+            Flexible(
+      child: FractionallySizedBox(
+              heightFactor: 0.5,
+              child: Scrollbar(
+                          thumbVisibility: true,
+                          controller: _textScrollController,
+                          child: ListView.builder(
+                            controller: _textScrollController,
+    padding: const EdgeInsets.all(0),
+    itemCount: _outputStrings.length,
+    itemBuilder: (BuildContext context, int index) {
+      return Text(_outputStrings[index]);
+    })
+  )
+            )
+            )
+          ]
+    )
     );
   }
 }
