@@ -40,7 +40,7 @@ class UCSFile {
 
   UCSFile(this._filename);
 
-  void outputToFile() async {
+  Future<void> outputToFile() async {
     var file = File(_filename);
     var sink = file.openWrite();
     try {
