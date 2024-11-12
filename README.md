@@ -18,6 +18,8 @@ The following formats are currently supported:
 
 Support for the following formats are planned:
 - .KSF files (Kick It Up)
+- .STX files
+- .NOT files (up to NOT5)
 - .SMA files
 
 SM file features supported:
