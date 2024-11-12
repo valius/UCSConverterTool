@@ -31,9 +31,10 @@ class _ConvertViewState extends State<ConvertView> {
   final List<String> _supportedExtensions = ['sm', 'ssc'];
   List<String> _outputStrings = ["Idle"];
   List<TextStyle> _outputTextStyles = [const TextStyle(color: Colors.black)];
-  bool _textMustScroll = false;
 
+  bool _textMustScroll = false;
   bool _buttonsEnabled = true;
+  bool _cancelQueued = false;
 
   void _openFileDialog() async {
     setState(() {
@@ -101,6 +102,11 @@ class _ConvertViewState extends State<ConvertView> {
         await getListOfFilesFromPath(_controller.text, _supportedExtensions);
 
     for (var file in listFiles) {
+      if (_cancelQueued) {
+        //Drop out early if a cancel has been queued
+        break;
+      }
+
       setState(() {
         _outputStrings.add("Generating UCS files from $file...");
         _outputTextStyles.add(const TextStyle(color: Colors.black));
@@ -130,15 +136,28 @@ class _ConvertViewState extends State<ConvertView> {
       });
     }
 
-    setState(() {
-      _outputStrings.add("Conversion completed.");
-      _outputTextStyles.add(const TextStyle(color: Colors.black));
-      _textMustScroll = true;
-    });
+    if (_cancelQueued) {
+      setState(() {
+        _outputStrings.add("Conversion stopped by user.");
+        _outputTextStyles.add(const TextStyle(color: Colors.red));
+        _textMustScroll = true;
+        _cancelQueued = false;
+      });
+    } else {
+      setState(() {
+        _outputStrings.add("Conversion completed.");
+        _outputTextStyles.add(const TextStyle(color: Colors.black));
+        _textMustScroll = true;
+      });
+    }
 
     setState(() {
       _buttonsEnabled = true;
     });
+  }
+
+  void _cancelConversion() async {
+    _cancelQueued = true;
   }
 
   @override
@@ -234,6 +253,22 @@ class _ConvertViewState extends State<ConvertView> {
                             ),
                             onPressed: _buttonsEnabled ? _convertfile : null,
                             child: const Text('Convert'),
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              shape: const RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(8)),
+                                side: BorderSide(
+                                  color: Colors.black,
+                                  width: 5,
+                                ),
+                              ),
+                            ),
+                            onPressed: !_buttonsEnabled
+                                ? _cancelConversion
+                                : null, //We only want cancel active when conversion is underway
+                            child: const Text('Cancel'),
                           ),
                         ],
                       )
