@@ -25,9 +25,14 @@ class ConvertView extends StatefulWidget {
 
 class _ConvertViewState extends State<ConvertView> {
   final _controller = TextEditingController();
-  final ScrollController _firstController = ScrollController();
+  final ScrollController _interfaceElementsScrollController =
+      ScrollController();
+  final ScrollController _textScrollController = ScrollController();
   final List<String> _supportedExtensions = ['sm', 'ssc'];
-  String _statusText = "Idle";
+  List<String> _outputStrings = ["Idle"];
+  List<TextStyle> _outputTextStyles = [const TextStyle(color: Colors.black)];
+  bool _textMustScroll = false;
+
   bool _buttonsEnabled = true;
 
   void _openFileDialog() async {
@@ -69,17 +74,27 @@ class _ConvertViewState extends State<ConvertView> {
     });
   }
 
+  void _textScrollToEnd() {
+    _textScrollController.animateTo(
+        _textScrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut);
+  }
+
   void _convertfile() async {
     if (_controller.text.isEmpty) {
       setState(() {
-        _statusText = "No file or directory selected!";
+        _outputStrings = ["No file or directory selected!"];
+        _outputTextStyles = [const TextStyle(color: Colors.black)];
       });
       return;
     }
     setState(() {
       _buttonsEnabled = false;
-      _statusText =
-          "Generating list of supported files from input ${_controller.text}";
+      _outputStrings = [
+        "Generating list of supported files from input ${_controller.text}...\n"
+      ];
+      _outputTextStyles = [const TextStyle(color: Colors.black)];
     });
 
     var listFiles =
@@ -87,7 +102,8 @@ class _ConvertViewState extends State<ConvertView> {
 
     for (var file in listFiles) {
       setState(() {
-        _statusText = "Generating UCS files from $file...";
+        _outputStrings.add("Generating UCS files from $file...");
+        _outputTextStyles.add(const TextStyle(color: Colors.black));
       });
 
       var converter = ConverterGenerator.createConverter(file);
@@ -102,14 +118,23 @@ class _ConvertViewState extends State<ConvertView> {
         resultString += "$filenameOnly, ";
       }
 
-      resultString += "in the folder ${p.dirname(_controller.text)}";
+      resultString += "in the folder ${p.dirname(_controller.text)}\n";
 
       await Future.wait(outputFutures);
 
       setState(() {
-        _statusText = resultString;
+        _outputStrings.add(resultString);
+        _outputTextStyles
+            .add(const TextStyle(color: Color.fromARGB(255, 56, 129, 57)));
+        _textMustScroll = true;
       });
     }
+
+    setState(() {
+      _outputStrings.add("Conversion completed.");
+      _outputTextStyles.add(const TextStyle(color: Colors.black));
+      _textMustScroll = true;
+    });
 
     setState(() {
       _buttonsEnabled = true;
@@ -125,108 +150,113 @@ class _ConvertViewState extends State<ConvertView> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
 
+    //Auto scroll text if needed
+    if (_textMustScroll) {
+      //You must have the text scroll after the UI is built and rendered to properly work
+      WidgetsBinding.instance.addPostFrameCallback((_) => _textScrollToEnd());
+      _textMustScroll = false;
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Flexible(
-      child: 
-            FractionallySizedBox(
-          //widthFactor: 0.9, // 80% of the parent width
-          heightFactor: 0.5, // 50% of the parent height
-          child: Scrollbar(
-                          thumbVisibility: true,
-                          controller: _interfaceElementsScrollController,
-                          child: Column(
+        appBar: AppBar(
+          // TRY THIS: Try changing the color here to a specific color (to
+          // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
+          // change color while the other colors stay the same.
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Text(widget.title),
+        ),
+        body: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-            Text(
-              'Choose a file or directory',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            TextField(
-              controller: _controller,
-              decoration: const InputDecoration(
-                border: UnderlineInputBorder(),
-                hintText: 'No file or directory selected',
+              Flexible(
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  controller: _interfaceElementsScrollController,
+                  child: ListView(
+                    controller: _interfaceElementsScrollController,
+                    padding: const EdgeInsets.all(8),
+                    children: <Widget>[
+                      Text(
+                        'Choose a file or directory',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      TextField(
+                        controller: _controller,
+                        decoration: const InputDecoration(
+                          border: UnderlineInputBorder(),
+                          hintText: 'No file or directory selected',
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              shape: const RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(8)),
+                                side: BorderSide(
+                                  color: Colors.black,
+                                  width: 5,
+                                ),
+                              ),
+                            ),
+                            onPressed: _buttonsEnabled ? _openFileDialog : null,
+                            child: const Text('Open File'),
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              shape: const RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(8)),
+                                side: BorderSide(
+                                  color: Colors.black,
+                                  width: 5,
+                                ),
+                              ),
+                            ),
+                            onPressed:
+                                _buttonsEnabled ? _openDirectoryDialog : null,
+                            child: const Text('Open Folder'),
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              shape: const RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(8)),
+                                side: BorderSide(
+                                  color: Colors.black,
+                                  width: 5,
+                                ),
+                              ),
+                            ),
+                            onPressed: _buttonsEnabled ? _convertfile : null,
+                            child: const Text('Convert'),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
               ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton(
-                  style: TextButton.styleFrom(
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                      side: BorderSide(
-                        color: Colors.black,
-                        width: 5,
-                      ),
-                    ),
-                  ),
-                  onPressed: _buttonsEnabled ? _openFileDialog : null,
-                  child: const Text('Open File'),
-                ),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                      side: BorderSide(
-                        color: Colors.black,
-                        width: 5,
-                      ),
-                    ),
-                  ),
-                  onPressed: _buttonsEnabled ? _openDirectoryDialog : null,
-                  child: const Text('Open Folder'),
-                ),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                      side: BorderSide(
-                        color: Colors.black,
-                        width: 5,
-                      ),
-                    ),
-                  ),
-                  onPressed: _buttonsEnabled ? _convertfile : null,
-                  child: const Text('Convert'),
-                ),
-              ],
-            )
-          ],
-        ),
-          ),
-            ),
-          ),
-            Flexible(
-      child: FractionallySizedBox(
-              heightFactor: 0.5,
-              child: Scrollbar(
+              Flexible(
+                  child: FractionallySizedBox(
+                      heightFactor: 1.0,
+                      child: Scrollbar(
                           thumbVisibility: true,
                           controller: _textScrollController,
                           child: ListView.builder(
-                            controller: _textScrollController,
-    padding: const EdgeInsets.all(0),
-    itemCount: _outputStrings.length,
-    itemBuilder: (BuildContext context, int index) {
-      return Text(_outputStrings[index]);
-    })
-  )
-            )
-            )
-          ]
-    )
-    );
+                              controller: _textScrollController,
+                              padding: const EdgeInsets.all(0),
+                              itemCount: _outputStrings.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                return Text(
+                                  _outputStrings[index],
+                                  style: _outputTextStyles[index],
+                                );
+                              }))))
+            ]));
   }
 }
