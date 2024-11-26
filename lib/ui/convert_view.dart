@@ -28,7 +28,7 @@ class _ConvertViewState extends State<ConvertView> {
   final ScrollController _interfaceElementsScrollController =
       ScrollController();
   final ScrollController _textScrollController = ScrollController();
-  final List<String> _supportedExtensions = ['sm', 'ssc'];
+  final List<String> _supportedExtensions = ['sm', 'ssc', 'stx'];
   List<String> _outputStrings = ["Idle"];
   List<TextStyle> _outputTextStyles = [const TextStyle(color: Colors.black)];
 

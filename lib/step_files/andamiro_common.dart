@@ -3,5 +3,10 @@ enum AMNoteType {
   regular,
   holdBegin,
   hold,
-  holdEnd
+  holdEnd,
+  groove,
+  wild,
+  aStep,
+  bStep,
+  cStep,
 }
