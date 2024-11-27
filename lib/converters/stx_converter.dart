@@ -31,6 +31,7 @@ class STXConverter implements IConverter {
         //For non-Division modes, we only care about the first division of each block, because UCS does not support
         //multiple divisions. Historically no STX has more than 1 division per block in non-Division modes anyway...
         String mode;
+        UCSChartType ucsChartType = UCSChartType.single;
         switch (chart.index) {
           case ChartIndex.practice:
             mode = "practice";
@@ -46,12 +47,15 @@ class STXConverter implements IConverter {
             break;
           case ChartIndex.freestyle:
             mode = "freestyle";
+            ucsChartType = UCSChartType.double;
             break;
           case ChartIndex.nightmare:
             mode = "nightmare";
+            ucsChartType = UCSChartType.double;
             break;
           case ChartIndex.halfDouble:
             mode = "halfdouble";
+            ucsChartType = UCSChartType.double;
             break;
           default:
             mode =
@@ -60,6 +64,7 @@ class STXConverter implements IConverter {
         }
         String ucsFilename = "${p.withoutExtension(_filename)}-$mode.ucs";
         UCSFile ucsFile = UCSFile(ucsFilename);
+        ucsFile.chartType = ucsChartType;   //Set chart type based on mode above
 
         for (var block in chart.getBlocks) {
           if (block.divisions.isEmpty) {
@@ -73,7 +78,7 @@ class STXConverter implements IConverter {
           ucsBlock.beatPerMeasure = division.beatPerMeasure;
           ucsBlock.beatSplit = division.beatSplit;
           ucsBlock.bpm = division.bpm;
-          ucsBlock.startTime = division.delay.toDouble();
+          ucsBlock.startTime = division.delay * 10.0;   //startime in STX is in centiseconds so we need to convert to milliseconds
 
           //Each line for STX for double, half double, and single already correct amount of steps, so no
           //need to do extra logic to set correct line size
