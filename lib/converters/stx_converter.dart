@@ -11,6 +11,33 @@ class STXConverter implements IConverter {
 
   STXConverter(this._filename);
 
+  UCSBlock _convertDivisionToUCSBlock(STXDivision division) {
+    UCSBlock ucsBlock = UCSBlock();
+    ucsBlock.beatPerMeasure = division.beatPerMeasure;
+    ucsBlock.beatSplit = division.beatSplit;
+    ucsBlock.bpm = division.bpm;
+    ucsBlock.startTime = division.delay *
+        10.0; //startime in STX is in centiseconds so we need to convert to milliseconds
+
+    //Each line for STX for double, half double, and single already correct amount of steps, so no
+    //need to do extra logic to set correct line size
+    for (var line in division.lines) {
+      UCSBlockLine ucsBlockLine = UCSBlockLine();
+      for (var step in line.notes) {
+        if (step.index > AMNoteType.holdEnd.index) {
+          //If notes are any of the special type, just mark it as regular for UCS
+          ucsBlockLine.notes.add(AMNoteType.regular);
+        } else {
+          ucsBlockLine.notes.add(step);
+        }
+      }
+
+      ucsBlock.lines.add(ucsBlockLine);
+    }
+
+    return ucsBlock;
+  }
+
   @override
   Future<List<UCSFile>> convert() async {
     if (_filename.isEmpty) {
@@ -64,37 +91,17 @@ class STXConverter implements IConverter {
         }
         String ucsFilename = "${p.withoutExtension(_filename)}-$mode.ucs";
         UCSFile ucsFile = UCSFile(ucsFilename);
-        ucsFile.chartType = ucsChartType;   //Set chart type based on mode above
+        ucsFile.chartType = ucsChartType; //Set chart type based on mode above
 
         for (var block in chart.getBlocks) {
           if (block.divisions.isEmpty) {
             //Not sure how this happened but stop because this block is past the end of the chart
             break;
           }
-
-          UCSBlock ucsBlock = UCSBlock();
+          
           //We only care about the first division of the block
           var division = block.divisions[0];
-          ucsBlock.beatPerMeasure = division.beatPerMeasure;
-          ucsBlock.beatSplit = division.beatSplit;
-          ucsBlock.bpm = division.bpm;
-          ucsBlock.startTime = division.delay * 10.0;   //startime in STX is in centiseconds so we need to convert to milliseconds
-
-          //Each line for STX for double, half double, and single already correct amount of steps, so no
-          //need to do extra logic to set correct line size
-          for (var line in division.lines) {
-            UCSBlockLine ucsBlockLine = UCSBlockLine();
-            for (var step in line.notes) {
-              if (step.index > AMNoteType.holdEnd.index) {
-                //If notes are any of the special type, just mark it as regular for UCS
-                ucsBlockLine.notes.add(AMNoteType.regular);
-              } else {
-                ucsBlockLine.notes.add(step);
-              }
-            }
-
-            ucsBlock.lines.add(ucsBlockLine);
-          }
+          UCSBlock ucsBlock = _convertDivisionToUCSBlock(division);
 
           ucsFile.getBlocks.add(ucsBlock);
         }
