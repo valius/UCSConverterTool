@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'dart:developer';
-import 'dart:ffi';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -57,9 +55,9 @@ class STXChart {
 class STXFile {
   final String _filename;
   final List<STXChart> _charts = [];
-  String _title = "";
-  String _artist = "";
-  String _author = "";
+  //String _title = "";
+  //String _artist = "";
+  //String _author = "";
 
   String get getFilename {
     return _filename;
@@ -258,15 +256,15 @@ class STXFile {
 
       //Jump 56 bytes to title, next 64 is title
       i += 56;
-      _title = utf8.decode(contents.sublist(i, i + 64));
+      //_title = utf8.decode(contents.sublist(i, i + 64));
 
       i += 64;
       //next 64 is artist
-      _artist = utf8.decode(contents.sublist(i, i + 64));
+      //_artist = utf8.decode(contents.sublist(i, i + 64));
 
       i += 64;
       //next 64 is author of chart
-      _author = utf8.decode(contents.sublist(i, i + 64));
+      //_author = utf8.decode(contents.sublist(i, i + 64));
 
       i += 64;
 
