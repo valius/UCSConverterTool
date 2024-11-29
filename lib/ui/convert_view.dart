@@ -28,7 +28,7 @@ class _ConvertViewState extends State<ConvertView> {
   final ScrollController _interfaceElementsScrollController =
       ScrollController();
   final ScrollController _textScrollController = ScrollController();
-  final List<String> _supportedExtensions = ['sm', 'ssc'];
+  final List<String> _supportedExtensions = ['sm', 'ssc', 'stx'];
   List<String> _outputStrings = ["Idle"];
   List<TextStyle> _outputTextStyles = [const TextStyle(color: Colors.black)];
 
@@ -107,33 +107,42 @@ class _ConvertViewState extends State<ConvertView> {
         break;
       }
 
-      setState(() {
-        _outputStrings.add("Generating UCS files from $file...");
-        _outputTextStyles.add(const TextStyle(color: Colors.black));
-      });
+      try {
+        setState(() {
+          _outputStrings.add("Generating UCS files from $file...");
+          _outputTextStyles.add(const TextStyle(color: Colors.black));
+        });
 
-      var converter = ConverterGenerator.createConverter(file);
-      List<UCSFile> ucsFiles = await converter.convert();
+        var converter = ConverterGenerator.createConverter(file);
+        List<UCSFile> ucsFiles = await converter.convert();
 
-      List<Future<void>> outputFutures = [];
-      String resultString = "Generated ";
-      for (var ucsFile in ucsFiles) {
-        outputFutures.add(ucsFile.outputToFile());
+        List<Future<void>> outputFutures = [];
+        String resultString = "Generated ";
+        for (var ucsFile in ucsFiles) {
+          outputFutures.add(ucsFile.outputToFile());
 
-        String filenameOnly = p.basename(ucsFile.getFilename);
-        resultString += "$filenameOnly, ";
+          String filenameOnly = p.basename(ucsFile.getFilename);
+          resultString += "$filenameOnly, ";
+        }
+
+        resultString += "in the folder ${p.dirname(_controller.text)}\n";
+
+        await Future.wait(outputFutures);
+
+        setState(() {
+          _outputStrings.add(resultString);
+          _outputTextStyles
+              .add(const TextStyle(color: Color.fromARGB(255, 56, 129, 57)));
+          _textMustScroll = true;
+        });
+      } catch (e) {
+        setState(() {
+          _outputStrings.add("Ran into error: $e");
+          _outputTextStyles
+              .add(const TextStyle(color: Colors.red));
+          _textMustScroll = true;
+        });
       }
-
-      resultString += "in the folder ${p.dirname(_controller.text)}\n";
-
-      await Future.wait(outputFutures);
-
-      setState(() {
-        _outputStrings.add(resultString);
-        _outputTextStyles
-            .add(const TextStyle(color: Color.fromARGB(255, 56, 129, 57)));
-        _textMustScroll = true;
-      });
     }
 
     if (_cancelQueued) {
