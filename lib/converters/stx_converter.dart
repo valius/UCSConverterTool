@@ -1,3 +1,6 @@
+import 'dart:collection';
+import 'dart:developer';
+
 import "package:path/path.dart" as p;
 
 import 'package:ucsconvertertool/step_files/andamiro_common.dart';
@@ -8,6 +11,9 @@ import 'i_converter.dart';
 
 class STXConverter implements IConverter {
   late final String _filename;
+  final Map<int, List<UCSBlock>> _mapOfBlocks = HashMap();
+  late STXFile _stxFile;
+  final List<UCSFile> _outputUCSCharts = [];
 
   STXConverter(this._filename);
 
@@ -38,6 +44,48 @@ class STXConverter implements IConverter {
     return ucsBlock;
   }
 
+  void _pathThroughCharts(
+      STXChart chart, int blockIndex, int divisionIndex, List<int> pathSoFar) {
+    //Mark this division as visited
+    pathSoFar.add(divisionIndex);
+
+    if (blockIndex == chart.getBlocks.length - 1) {
+      //We are in last block, so end the path here
+
+      //Create chart from the path we just made through the chart possibilities
+      _outputUCSCharts.add(createChartFromPath(chart, pathSoFar));
+      return;
+    }
+
+    //Set up so we go through all divisions in the next block
+    STXBlock nextBlock = chart.getBlocks[blockIndex + 1];
+    for (int i = 0; i < nextBlock.divisions.length; i++) {
+      var pathSoFarCopy = List<int>.from(pathSoFar);
+      _pathThroughCharts(chart, blockIndex + 1, i, pathSoFarCopy);
+    }
+  }
+
+  UCSFile createChartFromPath(STXChart chart, List<int> path) {
+    String ucsFilename = "${p.withoutExtension(_filename)}-division-variant";
+    for (int index in path) {
+      ucsFilename += "-${index + 1}"; //Convert from 0 index to 1 index
+    }
+    ucsFilename += ".ucs";
+    UCSFile result = UCSFile(ucsFilename);
+    result.chartType = UCSChartType.single; //Division is always single
+
+    //The index is the block index, the value of the element is the division index
+    for (int i = 0; i < path.length; i++) {
+      UCSBlock? ucsBlock = _mapOfBlocks[i]?[path[i]];
+
+      if (ucsBlock != null) {
+        result.getBlocks.add(ucsBlock);
+      }
+    }
+
+    return result;
+  }
+
   @override
   Future<List<UCSFile>> convert() async {
     if (_filename.isEmpty) {
@@ -45,15 +93,38 @@ class STXConverter implements IConverter {
 
       return List.empty();
     }
-    STXFile stxFile = STXFile(_filename);
-    await stxFile.intialize();
+    _stxFile = STXFile(_filename);
+    await _stxFile.intialize();
 
     //Make UCS from each chart mode
-    List<UCSFile> result = [];
-    for (var chart in stxFile.getCharts) {
+    for (var chart in _stxFile.getCharts) {
       if (chart.index == ChartIndex.division) {
-        //TODO(valius): For division charts, we can make UCS for each variant of each block
-        //so we can show every possibility. To be implemented later
+        _mapOfBlocks.clear();
+
+        //Sanity check
+        if (chart.getBlocks.isEmpty ||
+            chart.getBlocks[0].divisions.length > 1) {
+          //This division chart is malformed because there are either no blocks, or block 1 has more than 1 division
+          log("Encountered a malformed division chart in STX file");
+          continue;
+        }
+
+        //Convert all divisions in all blocks to UCS Blocks ahead of time
+        for (int i = 0; i < chart.getBlocks.length; i++) {
+          var block = chart.getBlocks[i];
+          if (block.divisions.isEmpty) {
+            //Not sure how this happened but stop because this block is past the end of the chart
+            break;
+          }
+
+          _mapOfBlocks[i] = List<UCSBlock>.empty(growable: true);
+          for (var division in block.divisions) {
+            UCSBlock ucsBlock = _convertDivisionToUCSBlock(division);
+            _mapOfBlocks[i]?.add(ucsBlock);
+          }
+        }
+
+        _pathThroughCharts(chart, 0, 0, List<int>.empty(growable: true));
       } else {
         //For non-Division modes, we only care about the first division of each block, because UCS does not support
         //multiple divisions. Historically no STX has more than 1 division per block in non-Division modes anyway...
@@ -98,7 +169,7 @@ class STXConverter implements IConverter {
             //Not sure how this happened but stop because this block is past the end of the chart
             break;
           }
-          
+
           //We only care about the first division of the block
           var division = block.divisions[0];
           UCSBlock ucsBlock = _convertDivisionToUCSBlock(division);
@@ -106,11 +177,11 @@ class STXConverter implements IConverter {
           ucsFile.getBlocks.add(ucsBlock);
         }
 
-        result.add(ucsFile);
+        _outputUCSCharts.add(ucsFile);
       }
     }
 
-    return result;
+    return _outputUCSCharts;
   }
 
   @override
