@@ -60,7 +60,7 @@ class STXConverter implements IConverter {
     //Set up so we go through all divisions in the next block
     STXBlock nextBlock = chart.getBlocks[blockIndex + 1];
     for (int i = 0; i < nextBlock.divisions.length; i++) {
-      var pathSoFarCopy = List<int>.from(pathSoFar);
+      var pathSoFarCopy = List<int>.from(pathSoFar);    //Pass a copy of the list down to the next function call or you will get mutation issues
       _pathThroughCharts(chart, blockIndex + 1, i, pathSoFarCopy);
     }
   }
