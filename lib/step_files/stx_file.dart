@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:ucsconvertertool/helpers/byte_helpers.dart';
 
 import 'andamiro_common.dart';
 
@@ -69,29 +70,6 @@ class STXFile {
 
   STXFile(this._filename);
 
-  int _readUint32Bytes(Uint8List bytes) {
-    if (bytes.length != 4) {
-      //This input is not the expected list of 4 bytes
-      return 0;
-    }
-
-    //STX uses little endian
-    return ((bytes[3] << 24) + (bytes[2] << 16) + (bytes[1] << 8) + (bytes[0]));
-  }
-
-  double _readFloatBytes(Uint8List bytes) {
-    if (bytes.length != 4) {
-      //This input is not the expected list of 4 bytes
-      return 0;
-    }
-
-    //Do double conversion, and since we only have 4 bytes, we only have 1 double
-    //Reverse byte order to convert from big to little endian
-    final byteData =
-        ByteData.sublistView(Uint8List.fromList(bytes.reversed.toList()));
-    return byteData.getFloat32(0);
-  }
-
   void _readChart(Uint8List chartBytes, ChartIndex index) {
     if (index == ChartIndex.lightmap) {
       //Ignore light map chart, since it is useless for UCS Conversion
@@ -120,15 +98,16 @@ class STXFile {
     }
 
     int i = 0;
+    int difficulty;
     STXChart currentChart = STXChart(index);
-    currentChart.difficulty = _readUint32Bytes(chartBytes.sublist(i, i + 4));
+    (i, difficulty) = readUint32BytesFromByteList(i, chartBytes);
+    currentChart.difficulty = difficulty;
 
-    i += 4;
     List<int> divisionCounts = List<int>.filled(maxBlocks, 0);
     for (int blockIndex = 0; blockIndex < maxBlocks; blockIndex++) {
-      divisionCounts[blockIndex] =
-          _readUint32Bytes(chartBytes.sublist(i, i + 4));
-      i += 4;
+      int divisionCount;
+      (i, divisionCount) = readUint32BytesFromByteList(i, chartBytes);
+      divisionCounts[blockIndex] = divisionCount;
     }
 
     for (int blockIndex = 0; blockIndex < maxBlocks; blockIndex++) {
@@ -145,9 +124,9 @@ class STXFile {
           divisionIndex++) {
         STXDivision division = STXDivision();
 
-        int compressedDataLength =
-            _readUint32Bytes(chartBytes.sublist(i, i + 4));
-        i += 4;
+        int compressedDataLength;
+        (i, compressedDataLength) =
+            readUint32BytesFromByteList(i, chartBytes);
 
         var decodedData =
             zlib.decode(chartBytes.sublist(i, i + compressedDataLength));
@@ -155,33 +134,38 @@ class STXFile {
         i += compressedDataLength;
 
         int decodedIndex = 0;
-        division.bpm = _readFloatBytes(Uint8List.fromList(
-            decodedData.sublist(decodedIndex, decodedIndex + 4)));
-        decodedIndex += 4;
-        division.beatPerMeasure = _readUint32Bytes(Uint8List.fromList(
-            decodedData.sublist(decodedIndex, decodedIndex + 4)));
-        decodedIndex += 4;
-        division.beatSplit = _readUint32Bytes(Uint8List.fromList(
-            decodedData.sublist(decodedIndex, decodedIndex + 4)));
-        decodedIndex += 4;
-        division.delay = _readUint32Bytes(Uint8List.fromList(
-            decodedData.sublist(decodedIndex, decodedIndex + 4)));
-        decodedIndex += 4;
+        double bpm;
+        (decodedIndex, bpm) =
+            readFloat32BytesFromByteList(decodedIndex, decodedData);
+        division.bpm = bpm;
+        int beatPerMeasure;
+        (decodedIndex, beatPerMeasure) =
+            readUint32BytesFromByteList(decodedIndex, decodedData);
+        division.beatPerMeasure = beatPerMeasure;
+        int beatSplit;
+        (decodedIndex, beatSplit) =
+            readUint32BytesFromByteList(decodedIndex, decodedData);
+        division.beatSplit = beatSplit;
+        int delay;
+        (decodedIndex, delay) =
+            readUint32BytesFromByteList(decodedIndex, decodedData);
+        division.delay = delay;
 
         //The next 20 integers will be skipped since they are the division sets and are specific to Division Mode
         //e.g. Perfect 0 - 0, Great 1 - 1, etc.
         decodedIndex += 80;
 
-        division.speedFactor = _readUint32Bytes(Uint8List.fromList(
-            decodedData.sublist(decodedIndex, decodedIndex + 4)));
-        decodedIndex += 4;
+        int speedFactor;
+        (decodedIndex, speedFactor) =
+            readUint32BytesFromByteList(decodedIndex, decodedData);
+        division.speedFactor = speedFactor;
 
         //Skip padding
         decodedIndex += 28;
 
-        int lineCount = _readUint32Bytes(Uint8List.fromList(
-            decodedData.sublist(decodedIndex, decodedIndex + 4)));
-        decodedIndex += 4;
+        int lineCount;
+        (decodedIndex, lineCount) =
+            readUint32BytesFromByteList(decodedIndex, decodedData);
 
         for (int i = 0; i < lineCount; i++) {
           STXDivisionLine line = STXDivisionLine();
@@ -272,10 +256,9 @@ class STXFile {
       List<int> addresses = [];
       for (int j = 0; j < ChartIndex.chartCount.index; j++) {
         //Read uint32 equivalent of bytes
-        int value = _readUint32Bytes(contents.sublist(i, i + 4));
+        int value;
+        (i, value) = readUint32BytesFromByteList(i, contents);
         addresses.add(value);
-
-        i += 4;
       }
 
       int endOfFile = contents.length;
