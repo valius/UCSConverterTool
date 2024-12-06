@@ -200,124 +200,48 @@ class SSCFile {
   Future<void> intialize() async {
     try {
       var file = File(_filename);
-      Stream<String> fileReadStream = file.openRead().transform(utf8.decoder).transform(const LineSplitter());
+      Stream<String> fileReadStream = file
+          .openRead()
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
 
       String tagString = "";
       String valueString = "";
       var isLookingForTagValue = false;
-      int currentMeasureCompareIndexForRoutine = 0; //Variable only used to help combine routine charts into 1 chart
+      int currentMeasureCompareIndexForRoutine =
+          0; //Variable only used to help combine routine charts into 1 chart
 
       await for (var line in fileReadStream) {
         switch (_processingMode) {
           case SMFileProcessingMode.tagRead:
             {
-              if (isLookingForTagValue) {
-                int indexOfSemicolon = line.indexOf(';');
-                if (indexOfSemicolon >= 0) {
-                  valueString += line.substring(0, indexOfSemicolon);
+              bool shouldChangeMode;
+              (
+                shouldChangeMode: shouldChangeMode,
+                isLookingForTagValue: isLookingForTagValue,
+                tagString: tagString,
+                valueString: valueString
+              ) = processTag(line, tagString, valueString, isLookingForTagValue,
+                  '#NOTEDATA', _processSSCFileTag);
+              if (shouldChangeMode) {
+                _processingMode = SMFileProcessingMode.chartTagRead;
+                _currentProcessingChart = SSCChart();
 
-                  //Process tag and value
-                  _processSSCFileTag(tagString, valueString);
-
-                  //Reset to initial state
-                  //Reset tag string and value
-                  isLookingForTagValue = false;
-                  tagString = "";
-                  valueString = "";
-                } else {
-                  valueString += line;
-                }
-              } else {
-                //Find if line contains a : character
-                int indexOfColon = line.indexOf(':');
-                int indexOfSemicolon = line.indexOf(';');
-                if (indexOfColon >= 0) {
-                  tagString += line.substring(0, indexOfColon);
-
-                  if (tagString.contains('#NOTEDATA')) {
-                    _processingMode = SMFileProcessingMode.chartTagRead;
-                    _currentProcessingChart = SSCChart();
-
-                    //Reset tag string and value
-                    isLookingForTagValue = false;
-                    tagString = "";
-                    valueString = "";
-                  } else if (indexOfSemicolon >= 0) {
-                    valueString +=
-                        line.substring(indexOfColon + 1, indexOfSemicolon);
-
-                    //Process tag and value
-                    _processSSCFileTag(tagString, valueString);
-
-                    //Reset to initial state
-                    //Reset tag string and value
-                    isLookingForTagValue = false;
-                    tagString = "";
-                    valueString = "";
-                  } else {
-                    //value is rest of line
-                    valueString += line.substring(indexOfColon + 1);
-                    isLookingForTagValue = true;
-                  }
-                } else {
-                  tagString += line;
-                }
               }
-
               break;
             }
           case SMFileProcessingMode.chartTagRead:
             {
-              if (isLookingForTagValue) {
-                int indexOfSemicolon = line.indexOf(';');
-                if (indexOfSemicolon >= 0) {
-                  valueString += line.substring(0, indexOfSemicolon);
-
-                  //Process tag and value
-                  _processSSCChartTag(tagString, valueString);
-
-                  //Reset to initial state
-                  //Reset tag string and value
-                  isLookingForTagValue = false;
-                  tagString = "";
-                  valueString = "";
-                } else {
-                  valueString += line;
-                }
-              } else {
-                //Find if line contains a : character
-                int indexOfColon = line.indexOf(':');
-                int indexOfSemicolon = line.indexOf(';');
-                if (indexOfColon >= 0) {
-                  tagString += line.substring(0, indexOfColon);
-
-                  if (tagString.contains('#NOTES')) {
-                    _processingMode = SMFileProcessingMode.chartRead;
-
-                    //Reset tag string and value
-                    isLookingForTagValue = false;
-                    tagString = "";
-                    valueString = "";
-                  } else if (indexOfSemicolon >= 0) {
-                    valueString +=
-                        line.substring(indexOfColon + 1, indexOfSemicolon);
-
-                    //Process tag and value
-                    _processSSCChartTag(tagString, valueString);
-
-                    //Reset to initial state
-                    //Reset tag string and value
-                    isLookingForTagValue = false;
-                    tagString = "";
-                    valueString = "";
-                  } else {
-                    //value is rest of line
-                    valueString += line.substring(indexOfColon + 1);
-                    isLookingForTagValue = true;
-                  }
-                } else {
-                  tagString += line;
-                }
+              bool shouldChangeMode;
+              (
+                shouldChangeMode: shouldChangeMode,
+                isLookingForTagValue: isLookingForTagValue,
+                tagString: tagString,
+                valueString: valueString
+              ) = processTag(line, tagString, valueString, isLookingForTagValue,
+                  '#NOTES', _processSSCChartTag);
+              if (shouldChangeMode) {
+                _processingMode = SMFileProcessingMode.chartRead;
               }
               break;
             }

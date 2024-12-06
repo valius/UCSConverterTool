@@ -137,6 +137,89 @@ SMMeasure combineRoutineMeasures(SMMeasure measure1, SMMeasure measure2) {
   return measure1;
 }
 
+({
+  bool shouldChangeMode,
+  bool isLookingForTagValue,
+  String tagString,
+  String valueString
+}) processTag(
+    String line,
+    String tagString,
+    String valueString,
+    bool isLookingForTagValue,
+    String tagToChangeMode,
+    Function(String, String) tagProcessFunction) {
+  int indexOfPound = line.indexOf(
+      '#'); //First instance of pound (check if a tag begins with this line)
+  if (isLookingForTagValue && indexOfPound == 0) {
+    //Tag begin, but we hadn't stopped looking for value of previous tag
+    //End tag value seeking here, and just process as if we ran into a semicolon
+    tagProcessFunction(tagString, valueString);
+    tagString = "";
+    valueString = "";
+    isLookingForTagValue = false;
+  }
+
+  if (isLookingForTagValue) {
+    int indexOfSemicolon = line.indexOf(';');
+
+    if (indexOfSemicolon >= 0) {
+      valueString += line.substring(0, indexOfSemicolon);
+
+      //Process tag and value
+      tagProcessFunction(tagString, valueString);
+
+      //Reset to initial state
+      //Reset tag string and value
+      isLookingForTagValue = false;
+      tagString = "";
+      valueString = "";
+    } else {
+      valueString += line;
+    }
+  } else {
+    //Find if line contains a : character
+    int indexOfColon = line.indexOf(':');
+    int indexOfSemicolon = line.indexOf(';');
+
+    if (indexOfColon >= 0) {
+      tagString += line.substring(0, indexOfColon);
+
+      if (tagString.contains(tagToChangeMode)) {    //Switch mode means we ignore the rest of the line
+        return (
+          shouldChangeMode: true,
+          isLookingForTagValue: false,
+          tagString: "",
+          valueString: ""
+        );
+      } else if (indexOfSemicolon >= 0) {
+        valueString += line.substring(indexOfColon + 1, indexOfSemicolon);
+
+        //Process tag and value
+        tagProcessFunction(tagString, valueString);
+
+        //Reset to initial state
+        isLookingForTagValue = false;
+        tagString = "";
+        valueString = "";
+      } else {
+        //value is rest of line, but no semicolon so we keep adding on to the value string
+        valueString += line.substring(indexOfColon + 1);
+        isLookingForTagValue = true;
+      }
+    } else {
+      tagString += line;
+    }
+  }
+
+  return (
+    shouldChangeMode: false,
+    isLookingForTagValue: isLookingForTagValue,
+    tagString: tagString,
+    valueString: valueString
+  );
+}
+
 class ProcessChartLineResult {
   late bool measureDidEnd;
   late bool chartDidEnd;
@@ -233,8 +316,8 @@ class ProcessRoutineChartLineResult {
   late SMFileProcessingMode currentProcessingMode;
   late SMMeasure measure;
 
-  ProcessRoutineChartLineResult(this.measureDidEnd, this.chartDidEnd, this.routineChartDidEnd,
-      this.currentProcessingMode, this.measure);
+  ProcessRoutineChartLineResult(this.measureDidEnd, this.chartDidEnd,
+      this.routineChartDidEnd, this.currentProcessingMode, this.measure);
 }
 
 ProcessRoutineChartLineResult processSecondRoutineChartLine(

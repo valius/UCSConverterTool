@@ -150,65 +150,25 @@ class SMFile {
       String tagString = "";
       String valueString = "";
       var isLookingForTagValue = false;
-      int currentMeasureCompareIndexForRoutine = 0; //Variable only used to help combine routine charts into 1 chart
+      int currentMeasureCompareIndexForRoutine =
+          0; //Variable only used to help combine routine charts into 1 chart
 
       await for (var line in fileReadStream) {
         switch (_processingMode) {
           case SMFileProcessingMode.tagRead:
             {
-              if (isLookingForTagValue) {
-                int indexOfSemicolon = line.indexOf(';');
-                if (indexOfSemicolon >= 0) {
-                  valueString += line.substring(0, indexOfSemicolon);
-
-                  //Process tag and value
-                  _processSMFileTag(tagString, valueString);
-
-                  //Reset to initial state
-                  //Reset tag string and value
-                  isLookingForTagValue = false;
-                  tagString = "";
-                  valueString = "";
-                } else {
-                  valueString += line;
-                }
-              } else {
-                //Find if line contains a : character
-                int indexOfColon = line.indexOf(':');
-                int indexOfSemicolon = line.indexOf(';');
-                if (indexOfColon >= 0) {
-                  tagString += line.substring(0, indexOfColon);
-
-                  if (tagString.contains('#NOTES')) {
-                    _processingMode = SMFileProcessingMode.chartTagRead;
-                    _currentProcessingChart = SMChart();
-
-                    //Reset tag string and value
-                    isLookingForTagValue = false;
-                    tagString = "";
-                    valueString = "";
-                  } else if (indexOfSemicolon >= 0) {
-                    valueString +=
-                        line.substring(indexOfColon + 1, indexOfSemicolon);
-
-                    //Process tag and value
-                    _processSMFileTag(tagString, valueString);
-
-                    //Reset to initial state
-                    //Reset tag string and value
-                    isLookingForTagValue = false;
-                    tagString = "";
-                    valueString = "";
-                  } else {
-                    //value is rest of line
-                    valueString += line.substring(indexOfColon + 1);
-                    isLookingForTagValue = true;
-                  }
-                } else {
-                  tagString += line;
-                }
+              bool shouldChangeMode;
+              (
+                shouldChangeMode: shouldChangeMode,
+                isLookingForTagValue: isLookingForTagValue,
+                tagString: tagString,
+                valueString: valueString
+              ) = processTag(line, tagString, valueString, isLookingForTagValue,
+                  '#NOTES', _processSMFileTag);
+              if (shouldChangeMode) {
+                _processingMode = SMFileProcessingMode.chartTagRead;
+                _currentProcessingChart = SMChart();
               }
-
               break;
             }
           case SMFileProcessingMode.chartTagRead:
