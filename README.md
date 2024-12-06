@@ -8,6 +8,10 @@ You may need to install the following packages if on Debian distribution to work
 
 sudo apt-get install libgtk-3-0 libblkid1 liblzma5
 
+## Compiling and running through make
+
+You can build and run this project through the _make_ command instead of through an IDE.  You can build using _make build_os_ or _make build_os_debug_ for debug (substitute _os_ with _windows_, _macos_, or _linux_).  _make help_ will display other options.
+
 ## Please Read Before Use
 
 This tool is still a work in progress, and improvements and support for more formats are planned.
@@ -21,6 +25,7 @@ Support for the following formats are planned:
 - .STX files
 - .NOT files (up to NOT5)
 - .SMA files
+- .SEE files
 
 SM file features supported:
 - BPM changes
