@@ -1,5 +1,3 @@
-import "dart:ffi";
-
 import "package:ucsconvertertool/converters/fallback_converter.dart";
 import "package:ucsconvertertool/converters/i_converter.dart";
 import "package:path/path.dart" as p;
