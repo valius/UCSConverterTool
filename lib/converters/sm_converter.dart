@@ -34,18 +34,8 @@ class SMConverter implements IConverter {
     int lastMeasureBeatSplit = -1;
 
     //SM files don't have Hold "Middle"/Continue Notes like Andamiro formats, so keep track if a lane is in the middle of a hold
-    List<bool> isHolding = [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ];
+    List<bool> isHolding = List<bool>.filled(10, false);
+    
     while (currentMeasureIndex < chart.getMeasureData.length) {
       SMMeasure currentMeasure = chart.getMeasureData[currentMeasureIndex];
 

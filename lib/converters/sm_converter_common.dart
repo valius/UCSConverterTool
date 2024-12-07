@@ -164,7 +164,7 @@ bool checkIfStopMustBeQueued(
   return (false, resultUCS, currentUcsBlock);
 }
 
-(List<SMConverterHelperTuple>, int, SMMeasure, bool)
+(List<SMConverterHelperTuple>, int, bool)
     createListOfTuplesWithinMeasure(
         int index,
         int origMeasureBeatsplit,
@@ -230,14 +230,14 @@ bool checkIfStopMustBeQueued(
 
     //Set the measure new line count after finishing calculation
     if (measureDirty) {
-      measure.measureLines = setMeasureLineCount(measure.measureLines,
-          origMeasureBeatsplit * 4 * measureBeatSplitFactor);
+      setMeasureLineCount(
+          measure, origMeasureBeatsplit * 4 * measureBeatSplitFactor);
     }
     //pairs prepared
     break;
   }
 
-  return (result, measureBeatSplitFactor, measure, measureDirty);
+  return (result, measureBeatSplitFactor, measureDirty);
 }
 
 UCSBlockLine convertSMLineToUCSLine(
