@@ -52,7 +52,6 @@ class SMConverter implements IConverter {
         (
           bpmsWithinMeasure,
           measureBeatSplitFactor,
-          currentMeasure,
           measureDirty
         ) = createListOfTuplesWithinMeasure(
             currentBpmIndex,
@@ -65,7 +64,6 @@ class SMConverter implements IConverter {
         (
           stopsWithinMeasure,
           measureBeatSplitFactor,
-          currentMeasure,
           measureDirty
         ) = createListOfTuplesWithinMeasure(
             currentStopIndex,
