@@ -169,7 +169,7 @@ class SSCConverter implements IConverter {
 
         bool stopQueued = false;
         bool bpmChanged = false;
-        (bpmChanged, resultUCS, currentUcsBlock) =
+        (bpmChanged, currentUcsBlock) =
             changeUCSBlockIfNeededForBPMChange(
                 numberOfMeasureLinesProcessed,
                 resultBeatSplit,
@@ -214,7 +214,7 @@ class SSCConverter implements IConverter {
         //Process stops
         if (stopQueued) {
           bool stopResult = false;
-          (stopResult, resultUCS, currentUcsBlock) =
+          (stopResult, currentUcsBlock) =
               changeUCSBlockIfNeededForStop(
                   numberOfMeasureLinesProcessed,
                   resultBeatSplit,

@@ -8,7 +8,7 @@ class SMConverterHelperTuple {
   late double beatAdjustment;
 }
 
-(bool, UCSFile, UCSBlock?) changeUCSBlockIfNeededForBPMChange(
+(bool, UCSBlock?) changeUCSBlockIfNeededForBPMChange(
     int linesProcessed,
     int beatsplit,
     double offset,
@@ -26,12 +26,12 @@ class SMConverterHelperTuple {
           //Add existing block first
           resultUCS.getBlocks.add(currentUcsBlock);
         } else {
-          //Replace this empty block with our bpm
+          //Replace this empty block's bpm with new bpm
           currentUcsBlock.bpm = bpmsWithinMeasure[i].value;
-          return (true, resultUCS, currentUcsBlock);
+          return (true, currentUcsBlock);
         }
       } else {
-        //This is the first block, so we need to set the first block to use the SM file's offset
+        //This is the first block of the chart, so we need to use the SM file's offset as the start time rather than 0
         takeStartTimeFromOffset = true;
       }
       currentUcsBlock = UCSBlock();
@@ -45,11 +45,11 @@ class SMConverterHelperTuple {
         currentUcsBlock.startTime = 0;
       }
 
-      return (true, resultUCS, currentUcsBlock);
+      return (true, currentUcsBlock);
     }
   }
 
-  return (false, resultUCS, currentUcsBlock);
+  return (false, currentUcsBlock);
 }
 
 bool checkIfStopMustBeQueued(
@@ -62,7 +62,7 @@ bool checkIfStopMustBeQueued(
   return false;
 }
 
-(bool, UCSFile, UCSBlock?) changeUCSBlockIfNeededForStop(
+(bool, UCSBlock?) changeUCSBlockIfNeededForStop(
     int linesProcessed,
     int beatsplit,
     double bpm,
@@ -82,7 +82,7 @@ bool checkIfStopMustBeQueued(
         //Don't add new block just update current block
       } else {
         //How is this possible that there was no block with bpm already existing?
-        return (false, resultUCS, currentUcsBlock);
+        return (false, currentUcsBlock);
       }
 
       double stopBpm = 1;
@@ -157,11 +157,11 @@ bool checkIfStopMustBeQueued(
       currentUcsBlock.beatPerMeasure = 4;
       currentUcsBlock.startTime = 0;
 
-      return (true, resultUCS, currentUcsBlock);
+      return (true, currentUcsBlock);
     }
   }
 
-  return (false, resultUCS, currentUcsBlock);
+  return (false, currentUcsBlock);
 }
 
 (List<SMConverterHelperTuple>, int, bool) createListOfTuplesWithinMeasure(

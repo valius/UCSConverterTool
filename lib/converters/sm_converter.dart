@@ -92,7 +92,7 @@ class SMConverter implements IConverter {
         SMMeasureLine line = currentMeasure.measureLines[measureLineIndex];
         bool stopQueued = false;
         bool bpmChanged = false;
-        (bpmChanged, resultUCS, currentUcsBlock) =
+        (bpmChanged, currentUcsBlock) =
             changeUCSBlockIfNeededForBPMChange(
                 numberOfMeasureLinesProcessed,
                 beatSplit,
@@ -139,7 +139,7 @@ class SMConverter implements IConverter {
         //Process stops
         if (stopQueued) {
           bool stopResult = false;
-          (stopResult, resultUCS, currentUcsBlock) =
+          (stopResult, currentUcsBlock) =
               changeUCSBlockIfNeededForStop(
                   numberOfMeasureLinesProcessed,
                   beatSplit,
