@@ -97,7 +97,6 @@ class SSCConverter implements IConverter {
         (
           bpmsWithinMeasure,
           measureBeatSplitFactor,
-          currentMeasure,
           measureDirty
         ) = createListOfTuplesWithinMeasure(
             currentBpmIndex,
@@ -110,7 +109,6 @@ class SSCConverter implements IConverter {
         (
           stopsWithinMeasure,
           measureBeatSplitFactor,
-          currentMeasure,
           measureDirty
         ) = createListOfTuplesWithinMeasure(
             currentStopIndex,
@@ -123,7 +121,6 @@ class SSCConverter implements IConverter {
         (
           tickCountsWithinMeasure,
           measureBeatSplitFactor,
-          currentMeasure,
           measureDirty
         ) = createListOfTuplesWithinMeasure(
             currentTickCountIndex,

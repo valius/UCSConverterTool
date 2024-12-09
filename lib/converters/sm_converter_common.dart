@@ -164,15 +164,14 @@ bool checkIfStopMustBeQueued(
   return (false, resultUCS, currentUcsBlock);
 }
 
-(List<SMConverterHelperTuple>, int, bool)
-    createListOfTuplesWithinMeasure(
-        int index,
-        int origMeasureBeatsplit,
-        int measureBeatSplitFactor,
-        List<SMValuePair> chartChanges,
-        int numberOfBeatsProcessed,
-        SMMeasure measure,
-        bool measureDirty) {
+(List<SMConverterHelperTuple>, int, bool) createListOfTuplesWithinMeasure(
+    int index,
+    int origMeasureBeatsplit,
+    int measureBeatSplitFactor,
+    List<SMValuePair> chartChanges,
+    int numberOfBeatsProcessed,
+    SMMeasure measure,
+    bool measureDirty) {
   List<SMConverterHelperTuple> result = [];
 
   int chartChangesCount = chartChanges.length;
