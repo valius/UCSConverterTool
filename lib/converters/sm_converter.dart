@@ -28,14 +28,15 @@ class SMConverter implements IConverter {
     int currentBpmIndex = -1; //Default to no bpm selected yet
     int currentStopIndex = -1; //Default to no stop selected yet
 
-    UCSBlock? currentUcsBlock;
+    UCSBlock currentUcsBlock = UCSBlock();
+    bool firstUCSBlockCreated = false;
 
     int currentMeasureIndex = 0;
     int lastMeasureBeatSplit = -1;
 
     //SM files don't have Hold "Middle"/Continue Notes like Andamiro formats, so keep track if a lane is in the middle of a hold
     List<bool> isHolding = List<bool>.filled(10, false);
-    
+
     while (currentMeasureIndex < chart.getMeasureData.length) {
       SMMeasure currentMeasure = chart.getMeasureData[currentMeasureIndex];
 
@@ -49,30 +50,24 @@ class SMConverter implements IConverter {
       int measureBeatSplitFactor = 1;
       while (true) {
         //Check for upcoming BPM pairs within this measure
-        (
-          bpmsWithinMeasure,
-          measureBeatSplitFactor,
-          measureDirty
-        ) = createListOfTuplesWithinMeasure(
-            currentBpmIndex,
-            origMeasureBeatsplit,
-            measureBeatSplitFactor,
-            smFileData.bpms,
-            numberOfBeatsProcessed,
-            currentMeasure,
-            measureDirty);
-        (
-          stopsWithinMeasure,
-          measureBeatSplitFactor,
-          measureDirty
-        ) = createListOfTuplesWithinMeasure(
-            currentStopIndex,
-            origMeasureBeatsplit,
-            measureBeatSplitFactor,
-            smFileData.stops,
-            numberOfBeatsProcessed,
-            currentMeasure,
-            measureDirty);
+        (bpmsWithinMeasure, measureBeatSplitFactor, measureDirty) =
+            createListOfTuplesWithinMeasure(
+                currentBpmIndex,
+                origMeasureBeatsplit,
+                measureBeatSplitFactor,
+                smFileData.bpms,
+                numberOfBeatsProcessed,
+                currentMeasure,
+                measureDirty);
+        (stopsWithinMeasure, measureBeatSplitFactor, measureDirty) =
+            createListOfTuplesWithinMeasure(
+                currentStopIndex,
+                origMeasureBeatsplit,
+                measureBeatSplitFactor,
+                smFileData.stops,
+                numberOfBeatsProcessed,
+                currentMeasure,
+                measureDirty);
         if (measureDirty) {
           //Stops changed the measure, have to recalculate bpms
           measureDirty = false;
@@ -92,16 +87,17 @@ class SMConverter implements IConverter {
         SMMeasureLine line = currentMeasure.measureLines[measureLineIndex];
         bool stopQueued = false;
         bool bpmChanged = false;
-        (bpmChanged, currentUcsBlock) =
-            changeUCSBlockIfNeededForBPMChange(
-                numberOfMeasureLinesProcessed,
-                beatSplit,
-                smFileData.offset,
-                bpmsWithinMeasure,
-                resultUCS,
-                currentUcsBlock);
+        (bpmChanged, currentUcsBlock) = changeUCSBlockIfNeededForBPMChange(
+            numberOfMeasureLinesProcessed,
+            beatSplit,
+            smFileData.offset,
+            bpmsWithinMeasure,
+            resultUCS,
+            !firstUCSBlockCreated,
+            currentUcsBlock);
         if (bpmChanged) {
           currentBpmIndex++;
+          firstUCSBlockCreated = true;    //the first UCS block must be created if a BPM change happened
         }
         if (checkIfStopMustBeQueued(
             numberOfMeasureLinesProcessed, stopsWithinMeasure)) {
@@ -113,12 +109,12 @@ class SMConverter implements IConverter {
                 beatSplit != lastMeasureBeatSplit) ||
             stopQueued) {
           //The beat split of this measure is different than last one, so create new block
-          if (currentUcsBlock != null && currentUcsBlock.lines.isNotEmpty) {
+          if (currentUcsBlock.lines.isNotEmpty) {
+            //Add previous block if it was not empty, otherwise just override current block's beatsplit
             resultUCS.getBlocks.add(currentUcsBlock);
             currentUcsBlock = UCSBlock();
-          } else {
-            currentUcsBlock ??= UCSBlock();
           }
+
           currentUcsBlock.bpm = smFileData.bpms[currentBpmIndex].value;
           if (stopQueued) {
             currentUcsBlock.beatSplit = 128;
@@ -134,20 +130,19 @@ class SMConverter implements IConverter {
             convertSMLineToUCSLine(line, chart.getChartType, isHolding);
 
         //Add line
-        currentUcsBlock?.lines.add(ucsLine);
+        currentUcsBlock.lines.add(ucsLine);
 
         //Process stops
         if (stopQueued) {
           bool stopResult = false;
-          (stopResult, currentUcsBlock) =
-              changeUCSBlockIfNeededForStop(
-                  numberOfMeasureLinesProcessed,
-                  beatSplit,
-                  smFileData.bpms[currentBpmIndex].value,
-                  isHolding,
-                  stopsWithinMeasure,
-                  resultUCS,
-                  currentUcsBlock);
+          (stopResult, currentUcsBlock) = changeUCSBlockIfNeededForStop(
+              numberOfMeasureLinesProcessed,
+              beatSplit,
+              smFileData.bpms[currentBpmIndex].value,
+              isHolding,
+              stopsWithinMeasure,
+              resultUCS,
+              currentUcsBlock);
           if (stopResult) {
             currentStopIndex++;
           }
@@ -164,9 +159,7 @@ class SMConverter implements IConverter {
     }
 
     //Add final ucs block here
-    if (currentUcsBlock != null) {
-      resultUCS.getBlocks.add(currentUcsBlock);
-    }
+    resultUCS.getBlocks.add(currentUcsBlock);
 
     return resultUCS;
   }
