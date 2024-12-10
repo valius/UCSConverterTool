@@ -60,24 +60,14 @@ class SSCConverter implements IConverter {
     int currentStopIndex = -1; //Default to no stop selected yet
     int currentTickCountIndex = -1;
 
-    UCSBlock? currentUcsBlock;
+    UCSBlock currentUcsBlock = UCSBlock();
+    bool firstUCSBlockCreated = false;
 
     int index = 0;
     int lastBeatSplit = -1;
 
     //SSC files don't have Hold "Middle"/Continue Notes like Andamiro formats, so keep track if a lane is in the middle of a hold
-    List<bool> isHolding = [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ];
+    List<bool> isHolding = List<bool>.filled(10, false);
     int targetTickCount = -1;
 
     while (index < chart.getMeasureData.length) {
@@ -94,45 +84,33 @@ class SSCConverter implements IConverter {
       int measureBeatSplitFactor = 1;
       while (true) {
         //Check for upcoming BPM pairs within this measure
-        (
-          bpmsWithinMeasure,
-          measureBeatSplitFactor,
-          currentMeasure,
-          measureDirty
-        ) = createListOfTuplesWithinMeasure(
-            currentBpmIndex,
-            origMeasureBeatsplit,
-            measureBeatSplitFactor,
-            bpms,
-            numberOfBeatsProcessed,
-            currentMeasure,
-            measureDirty);
-        (
-          stopsWithinMeasure,
-          measureBeatSplitFactor,
-          currentMeasure,
-          measureDirty
-        ) = createListOfTuplesWithinMeasure(
-            currentStopIndex,
-            origMeasureBeatsplit,
-            measureBeatSplitFactor,
-            stops,
-            numberOfBeatsProcessed,
-            currentMeasure,
-            measureDirty);
-        (
-          tickCountsWithinMeasure,
-          measureBeatSplitFactor,
-          currentMeasure,
-          measureDirty
-        ) = createListOfTuplesWithinMeasure(
-            currentTickCountIndex,
-            origMeasureBeatsplit,
-            measureBeatSplitFactor,
-            tickCounts,
-            numberOfBeatsProcessed,
-            currentMeasure,
-            measureDirty);
+        (bpmsWithinMeasure, measureBeatSplitFactor, measureDirty) =
+            createListOfTuplesWithinMeasure(
+                currentBpmIndex,
+                origMeasureBeatsplit,
+                measureBeatSplitFactor,
+                bpms,
+                numberOfBeatsProcessed,
+                currentMeasure,
+                measureDirty);
+        (stopsWithinMeasure, measureBeatSplitFactor, measureDirty) =
+            createListOfTuplesWithinMeasure(
+                currentStopIndex,
+                origMeasureBeatsplit,
+                measureBeatSplitFactor,
+                stops,
+                numberOfBeatsProcessed,
+                currentMeasure,
+                measureDirty);
+        (tickCountsWithinMeasure, measureBeatSplitFactor, measureDirty) =
+            createListOfTuplesWithinMeasure(
+                currentTickCountIndex,
+                origMeasureBeatsplit,
+                measureBeatSplitFactor,
+                tickCounts,
+                numberOfBeatsProcessed,
+                currentMeasure,
+                measureDirty);
 
         if (measureDirty) {
           //Stops changed the measure, have to recalculate bpms
@@ -172,16 +150,18 @@ class SSCConverter implements IConverter {
 
         bool stopQueued = false;
         bool bpmChanged = false;
-        (bpmChanged, resultUCS, currentUcsBlock) =
-            changeUCSBlockIfNeededForBPMChange(
-                numberOfMeasureLinesProcessed,
-                resultBeatSplit,
-                sscFileData.offset,
-                bpmsWithinMeasure,
-                resultUCS,
-                currentUcsBlock);
+        (bpmChanged, currentUcsBlock) = changeUCSBlockIfNeededForBPMChange(
+            numberOfMeasureLinesProcessed,
+            resultBeatSplit,
+            sscFileData.offset,
+            bpmsWithinMeasure,
+            resultUCS,
+            !firstUCSBlockCreated,
+            currentUcsBlock);
         if (bpmChanged) {
           currentBpmIndex++;
+          firstUCSBlockCreated =
+              true; //the first UCS block must be created if a BPM change happened
         }
         if (checkIfStopMustBeQueued(
             numberOfMeasureLinesProcessed, stopsWithinMeasure)) {
@@ -191,12 +171,12 @@ class SSCConverter implements IConverter {
         if ((lastBeatSplit > 0 && resultBeatSplit != lastBeatSplit) ||
             stopQueued) {
           //The beat split of this measure is different than last one, so create new block
-          if (currentUcsBlock != null && currentUcsBlock.lines.isNotEmpty) {
+          if (currentUcsBlock.lines.isNotEmpty) {
+            //Add previous block if it was not empty, otherwise just override current block's beatsplit
             resultUCS.getBlocks.add(currentUcsBlock);
             currentUcsBlock = UCSBlock();
-          } else {
-            currentUcsBlock ??= UCSBlock();
           }
+
           currentUcsBlock.bpm = bpms[currentBpmIndex].value;
           if (stopQueued) {
             currentUcsBlock.beatSplit = 128;
@@ -212,20 +192,19 @@ class SSCConverter implements IConverter {
             convertSMLineToUCSLine(line, chart.getChartType, isHolding);
 
         //Add line
-        currentUcsBlock?.lines.add(ucsLine);
+        currentUcsBlock.lines.add(ucsLine);
 
         //Process stops
         if (stopQueued) {
           bool stopResult = false;
-          (stopResult, resultUCS, currentUcsBlock) =
-              changeUCSBlockIfNeededForStop(
-                  numberOfMeasureLinesProcessed,
-                  resultBeatSplit,
-                  bpms[currentBpmIndex].value,
-                  isHolding,
-                  stopsWithinMeasure,
-                  resultUCS,
-                  currentUcsBlock);
+          (stopResult, currentUcsBlock) = changeUCSBlockIfNeededForStop(
+              numberOfMeasureLinesProcessed,
+              resultBeatSplit,
+              bpms[currentBpmIndex].value,
+              isHolding,
+              stopsWithinMeasure,
+              resultUCS,
+              currentUcsBlock);
           if (stopResult) {
             currentStopIndex++;
           }
@@ -237,7 +216,7 @@ class SSCConverter implements IConverter {
           UCSBlockLine paddingLine =
               createPaddingLine(chart.getChartType, isHolding);
 
-          currentUcsBlock?.lines.add(paddingLine);
+          currentUcsBlock.lines.add(paddingLine);
         }
 
         numberOfMeasureLinesProcessed++;
@@ -251,9 +230,7 @@ class SSCConverter implements IConverter {
     }
 
     //Add final ucs block here
-    if (currentUcsBlock != null) {
-      resultUCS.getBlocks.add(currentUcsBlock);
-    }
+    resultUCS.getBlocks.add(currentUcsBlock);
 
     return resultUCS;
   }

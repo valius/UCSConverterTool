@@ -78,16 +78,15 @@ List<SMValuePair> processTagValueString(String tagValueString) {
   return result;
 }
 
-List<SMMeasureLine> setMeasureLineCount(
-    List<SMMeasureLine> measureLines, int count) {
+void setMeasureLineCount(SMMeasure measure, int count) {
   //To do this operation, you need to get lcm of current measure line count and input count
-  int resultLineCount = lcm(measureLines.length, count);
+  int resultLineCount = lcm(measure.measureLines.length, count);
 
-  int numLinesToInsert = (resultLineCount ~/ measureLines.length) - 1;
+  int numLinesToInsert = (resultLineCount ~/ measure.measureLines.length) - 1;
   List<SMMeasureLine> resultMeasureLines = [];
 
-  for (int i = 0; i < measureLines.length; i++) {
-    SMMeasureLine line = measureLines[i];
+  for (int i = 0; i < measure.measureLines.length; i++) {
+    SMMeasureLine line = measure.measureLines[i];
     resultMeasureLines.add(line);
 
     //Finished adding the line, so add padding lines
@@ -104,7 +103,7 @@ List<SMMeasureLine> setMeasureLineCount(
     }
   }
 
-  return resultMeasureLines;
+  measure.measureLines = resultMeasureLines;
 }
 
 SMMeasure combineRoutineMeasures(SMMeasure measure1, SMMeasure measure2) {
@@ -116,10 +115,8 @@ SMMeasure combineRoutineMeasures(SMMeasure measure1, SMMeasure measure2) {
     //Need to make measures exactly the same size
     int newLineCount = lcm(measure1LineCount, measure2LineCount);
 
-    measure1.measureLines =
-        setMeasureLineCount(measure1.measureLines, newLineCount);
-    measure2.measureLines =
-        setMeasureLineCount(measure2.measureLines, newLineCount);
+    setMeasureLineCount(measure1, newLineCount);
+    setMeasureLineCount(measure2, newLineCount);
   }
 
   //Go through each line and place any valid notes in measure 2 into measure 1
@@ -185,7 +182,8 @@ SMMeasure combineRoutineMeasures(SMMeasure measure1, SMMeasure measure2) {
     if (indexOfColon >= 0) {
       tagString += line.substring(0, indexOfColon);
 
-      if (tagString.contains(tagToChangeMode)) {    //Switch mode means we ignore the rest of the line
+      if (tagString.contains(tagToChangeMode)) {
+        //Switch mode means we ignore the rest of the line
         return (
           shouldChangeMode: true,
           isLookingForTagValue: false,

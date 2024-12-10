@@ -8,33 +8,36 @@ class SMConverterHelperTuple {
   late double beatAdjustment;
 }
 
-(bool, UCSFile, UCSBlock?) changeUCSBlockIfNeededForBPMChange(
+(bool, UCSBlock) changeUCSBlockIfNeededForBPMChange(
     int linesProcessed,
     int beatsplit,
     double offset,
     List<SMConverterHelperTuple> bpmsWithinMeasure,
     UCSFile resultUCS,
-    UCSBlock? currentUcsBlock) {
+    bool firstBlockNotCreated,
+    UCSBlock currentUcsBlock) {
   //Check if need bpm change
   for (int i = 0; i < bpmsWithinMeasure.length; i++) {
     if (linesProcessed == bpmsWithinMeasure[i].chartLocation) {
       bool takeStartTimeFromOffset = false;
 
-      //Create new block to indicate new BPM
-      if (currentUcsBlock != null) {
+      if (!firstBlockNotCreated) {
         if (currentUcsBlock.lines.isNotEmpty) {
-          //Add existing block first
+          //Add existing block first, if not empty
           resultUCS.getBlocks.add(currentUcsBlock);
+
+          //Create new block
+          currentUcsBlock = UCSBlock();
         } else {
-          //Replace this empty block with our bpm
+          //Replace this empty block's bpm with new bpm
           currentUcsBlock.bpm = bpmsWithinMeasure[i].value;
-          return (true, resultUCS, currentUcsBlock);
+          return (true, currentUcsBlock);
         }
       } else {
-        //This is the first block, so we need to set the first block to use the SM file's offset
+        //This is the first block of the chart, so we need to use the SM file's offset as the start time rather than 0
         takeStartTimeFromOffset = true;
       }
-      currentUcsBlock = UCSBlock();
+      
       currentUcsBlock.bpm = bpmsWithinMeasure[i].value;
       currentUcsBlock.beatSplit = beatsplit;
       currentUcsBlock.beatPerMeasure =
@@ -45,11 +48,11 @@ class SMConverterHelperTuple {
         currentUcsBlock.startTime = 0;
       }
 
-      return (true, resultUCS, currentUcsBlock);
+      return (true, currentUcsBlock);
     }
   }
 
-  return (false, resultUCS, currentUcsBlock);
+  return (false, currentUcsBlock);
 }
 
 bool checkIfStopMustBeQueued(
@@ -62,28 +65,23 @@ bool checkIfStopMustBeQueued(
   return false;
 }
 
-(bool, UCSFile, UCSBlock?) changeUCSBlockIfNeededForStop(
+(bool, UCSBlock) changeUCSBlockIfNeededForStop(
     int linesProcessed,
     int beatsplit,
     double bpm,
     List<bool> isHolding,
     List<SMConverterHelperTuple> stopsWithinMeasure,
     UCSFile resultUCS,
-    UCSBlock? currentUcsBlock) {
+    UCSBlock currentUcsBlock) {
   //Check if need bpm change
   for (int i = 0; i < stopsWithinMeasure.length; i++) {
     if (linesProcessed == stopsWithinMeasure[i].chartLocation) {
-      if (currentUcsBlock != null) {
-        if (currentUcsBlock.lines.isNotEmpty) {
-          //Add existing block first
-          resultUCS.getBlocks.add(currentUcsBlock);
-          currentUcsBlock = UCSBlock();
-        }
-        //Don't add new block just update current block
-      } else {
-        //How is this possible that there was no block with bpm already existing?
-        return (false, resultUCS, currentUcsBlock);
+      if (currentUcsBlock.lines.isNotEmpty) {
+        //Add existing block first
+        resultUCS.getBlocks.add(currentUcsBlock);
+        currentUcsBlock = UCSBlock();
       }
+      //Don't add new block just update current block if the previous block is empty
 
       double stopBpm = 1;
       double timeNeededForOneBeat = 1.0 / 128 / (stopBpm / 60000.0);
@@ -157,22 +155,21 @@ bool checkIfStopMustBeQueued(
       currentUcsBlock.beatPerMeasure = 4;
       currentUcsBlock.startTime = 0;
 
-      return (true, resultUCS, currentUcsBlock);
+      return (true, currentUcsBlock);
     }
   }
 
-  return (false, resultUCS, currentUcsBlock);
+  return (false, currentUcsBlock);
 }
 
-(List<SMConverterHelperTuple>, int, SMMeasure, bool)
-    createListOfTuplesWithinMeasure(
-        int index,
-        int origMeasureBeatsplit,
-        int measureBeatSplitFactor,
-        List<SMValuePair> chartChanges,
-        int numberOfBeatsProcessed,
-        SMMeasure measure,
-        bool measureDirty) {
+(List<SMConverterHelperTuple>, int, bool) createListOfTuplesWithinMeasure(
+    int index,
+    int origMeasureBeatsplit,
+    int measureBeatSplitFactor,
+    List<SMValuePair> chartChanges,
+    int numberOfBeatsProcessed,
+    SMMeasure measure,
+    bool measureDirty) {
   List<SMConverterHelperTuple> result = [];
 
   int chartChangesCount = chartChanges.length;
@@ -230,14 +227,14 @@ bool checkIfStopMustBeQueued(
 
     //Set the measure new line count after finishing calculation
     if (measureDirty) {
-      measure.measureLines = setMeasureLineCount(measure.measureLines,
-          origMeasureBeatsplit * 4 * measureBeatSplitFactor);
+      setMeasureLineCount(
+          measure, origMeasureBeatsplit * 4 * measureBeatSplitFactor);
     }
     //pairs prepared
     break;
   }
 
-  return (result, measureBeatSplitFactor, measure, measureDirty);
+  return (result, measureBeatSplitFactor, measureDirty);
 }
 
 UCSBlockLine convertSMLineToUCSLine(
