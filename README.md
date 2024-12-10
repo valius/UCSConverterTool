@@ -14,18 +14,23 @@ You can build and run this project through the _make_ command instead of through
 
 ## Please Read Before Use
 
+The tool will dynamically convert in either single file mode or folder/path mode based on whether it is given a folder/path or given a file.  So you can mass convert folders or single files if you wish.
+
+## Supported Formats
+
 This tool is still a work in progress, and improvements and support for more formats are planned.
 
 The following formats are currently supported:
 - .SM files (pre-Stepmania 5)
 - .SSC files (Stepmania 5 and beyond)
+- .STX files
 
 Support for the following formats are planned:
 - .KSF files (Kick It Up)
-- .STX files
 - .NOT files (up to NOT5)
 - .SMA files
 - .SEE files
+- .NX files (NX10)
 
 SM file features supported:
 - BPM changes
@@ -39,3 +44,10 @@ SSC file features supported:
 - Tickcount/Beatsplit changes
 
 No other features are supported due to the limitations of the UCS file format.
+
+STX file features supported:
+- BPM changes (same as UCS)
+- Tickcount/Beatsplit changes (same as UCS)
+- converts Division Mode charts with all possibilities so you can see all possible Division Mode charts in an STX (labeled _filename_variant_x_y_z_.ucs_ where x, y, and z are numbers)
+
+Due to limitations of the UCS file format, the scroll speed change feature is not supported.
