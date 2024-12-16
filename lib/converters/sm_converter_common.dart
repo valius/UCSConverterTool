@@ -276,12 +276,6 @@ UCSBlockLine convertSMLineToUCSLine(
           ucsLine.notes.add(AMNoteType.holdEnd);
           break;
         }
-      default:
-        {
-          //Unknown note type, so default to none
-          ucsLine.notes.add(AMNoteType.none);
-          break;
-        }
     }
   }
 
