@@ -1,6 +1,7 @@
 import "package:ucsconvertertool/converters/fallback_converter.dart";
 import "package:ucsconvertertool/converters/i_converter.dart";
 import "package:path/path.dart" as p;
+import "package:ucsconvertertool/converters/not_converter.dart";
 import "package:ucsconvertertool/converters/sm_converter.dart";
 import "package:ucsconvertertool/converters/ssc_converter.dart";
 import "package:ucsconvertertool/converters/stx_converter.dart";
@@ -11,6 +12,7 @@ class ConverterGenerator {
     '.SM': (filename) => SMConverter(filename),
     '.SSC': (filename) => SSCConverter(filename),
     '.STX': (filename) => STXConverter(filename),
+    '.NOT': (filename) => NotConverter(filename),
   };
 
   static IConverter createConverter(String filename) {
