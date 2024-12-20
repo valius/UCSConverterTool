@@ -28,10 +28,34 @@ class Not5File {
   final List<int> _bunkis = List.filled(maxChanges, -1);
   int _beatSplit = 0;
   int _beatsPerMeasure = -1;
-  List<NotLine> _lines = [];
+  final List<NotLine> _lines = [];
 
   String get getFilename {
     return _filename;
+  }
+
+  List<double> get getBpms {
+    return _bpms;
+  }
+
+  List<int> get getStartTimes {
+    return _startTimes;
+  }
+
+  List<int> get getBunkis {
+    return _bunkis;
+  }
+
+  int get getBeatSplit {
+    return _beatSplit;
+  }
+
+  int get getBeatsPerMeasure {
+    return _beatsPerMeasure;
+  }
+
+  List<NotLine> get getLines {
+    return _lines;
   }
 
   Not5File(this._filename);
@@ -49,7 +73,7 @@ class Not5File {
       int fileIndex = 0;
 
       if (!listEquals(not5Begin, contents.sublist(0, 8))) {
-        throw const FormatException('STX Header mismatch!');
+        throw const FormatException('NOT5 Header mismatch!');
       }
 
       fileIndex = 8;
@@ -89,6 +113,9 @@ class Not5File {
       int beatsPerMeasure;
       (fileIndex, beatsPerMeasure) =
           readUint32BytesFromByteList(fileIndex, contents);
+      if (beatsPerMeasure == 0) {
+        beatsPerMeasure = 4; //Default to 4 if nothing is specified
+      }
       _beatsPerMeasure = beatsPerMeasure;
 
       //Go to this index, since that is where the step data actually begins
@@ -111,12 +138,12 @@ class Not5File {
 
       for (int i = 0; i < lineCount; i++) {
         NotLine notLine = NotLine();
-        var stepLowerByte = stepArray[i * 2];
-        var stepHigherByte = stepArray[i * 2 + 1];
-        var holdBeginLowerByte = holdBeginArray[i * 2];
-        var holdBeginHigherByte = holdBeginArray[i * 2 + 1];
-        var holdEndLowerByte = holdEndArray[i * 2];
-        var holdEndHigherByte = holdEndArray[i * 2 + 1];
+        var stepLowerByte = stepArray[i * 2 + 1];
+        var stepHigherByte = stepArray[i * 2];
+        var holdBeginLowerByte = holdBeginArray[i * 2 + 1];
+        var holdBeginHigherByte = holdBeginArray[i * 2];
+        var holdEndLowerByte = holdEndArray[i * 2 + 1];
+        var holdEndHigherByte = holdEndArray[i * 2];
 
         //You need to do an operation to get a byte that shows if there is a step in each slot (looks like 1111111111)
         var stepByte = ((stepLowerByte & 3) << 8 | stepHigherByte);
@@ -129,47 +156,35 @@ class Not5File {
         for (int j = 0; j < 10; j++) {
           int mask = 1 << j;
           bool stepPresent = (mask & stepByte) != 0;
-          bool holdBeginPresent = (mask & holdBeginByte) != 0;
-          bool holdEndPresent = (mask & holdEndByte) != 0;
-
-          //Sanity check, exception if more than one of these conditions is true since that means chart is malformed
-          int typesPresent = 0;
           if (stepPresent) {
-            typesPresent++;
-          }
-          if (holdBeginPresent) {
-            typesPresent++;
-          }
-          if (holdEndPresent) {
-            typesPresent++;
-          }
+            bool holdBeginPresent = (mask & holdBeginByte) != 0;
+            bool holdEndPresent = (mask & holdEndByte) != 0;
 
-          if (typesPresent > 1) {
-            throw ("A step cannot be a regular step, a hold begin, or a hold end or a combination of any of these at the same time. Chart is malformed!");
-          }
+            //Sanity check, exception if more than one of these conditions is true since that means chart is malformed
+            if (holdBeginPresent && holdEndPresent) {
+              throw ("A step cannot be a hold begin or a hold end at the same time. Chart is malformed!");
+            }
 
-          //Since we are going right to left, insert in front of vector rather than adding to back
-          if (stepPresent) {
-            if (isHolding[9 - j]) {
-              throw ("Regular note in the middle of a hold, chart is malformed!");
+            //Since we are going right to left, insert in front of vector rather than adding to back
+            if (holdBeginPresent) {
+              if (isHolding[9 - j]) {
+                throw ("A hold begin note is attempted to be added when the hold hasn't ended, chart is malformed!");
+              }
+              isHolding[9 - j] = true;
+              notLine.notes.insert(0, AMNoteType.holdBegin);
+            } else if (holdEndPresent) {
+              if (!isHolding[9 - j]) {
+                throw ("A hold end note is attempted to be added when there is no hold, chart is malformed!");
+              }
+              isHolding[9 - j] = false;
+              notLine.notes.insert(0, AMNoteType.holdEnd);
+            } else if (isHolding[9 - j]) {
+              //We are in middle of hold
+              notLine.notes.insert(0, AMNoteType.hold);
+            } else {
+              //Just a regular note
+              notLine.notes.insert(0, AMNoteType.regular);
             }
-            //There is a step present, insert regular note
-            notLine.notes.insert(0, AMNoteType.regular);
-          } else if (holdBeginPresent) {
-            if (isHolding[9 - j]) {
-              throw ("A hold begin note is attempted to be added when the hold hasn't ended, chart is malformed!");
-            }
-            isHolding[9 - j] = true;
-            notLine.notes.insert(0, AMNoteType.holdBegin);
-          } else if (holdEndPresent) {
-            if (!isHolding[9 - j]) {
-              throw ("A hold end note is attempted to be added when there is no hold, chart is malformed!");
-            }
-            isHolding[9 - j] = false;
-            notLine.notes.insert(0, AMNoteType.holdEnd);
-          } else if (isHolding[9 - j]) {
-            //We are in middle of hold
-            notLine.notes.insert(0, AMNoteType.hold);
           } else {
             //Nothing here
             notLine.notes.insert(0, AMNoteType.none);
