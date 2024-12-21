@@ -1,6 +1,6 @@
-# ucsconvertertool
+# UCS Converter Tool
 
-This program is a tool for converting various step formats to the UCS format used by Pump It Up arcade games.
+This program is a tool for converting various step formats to the UCS format used by the Pump It Up arcade games since Pump It Up Fiesta EX.
 
 ## Running in Linux
 
@@ -14,7 +14,7 @@ You can build and run this project through the _make_ command instead of through
 
 ## Please Read Before Use
 
-The tool will dynamically convert in either single file mode or folder/path mode based on whether it is given a folder/path or given a file.  So you can mass convert folders or single files if you wish.
+The tool will dynamically convert in either single file mode or folder/path mode based on whether it is given a file or folder/path.  You can mass convert entire folders recursively or single files if you wish.
 
 ## Supported Formats
 
@@ -24,10 +24,11 @@ The following formats are currently supported:
 - .SM files (pre-Stepmania 5)
 - .SSC files (Stepmania 5 and beyond)
 - .STX files
+- .NOT5 files
 
 Support for the following formats are planned:
 - .KSF files (Kick It Up)
-- .NOT files (up to NOT5)
+- .NOT files (pre-NOT5)
 - .SMA files
 - .SEE files
 - .NX files (NX10)
@@ -51,3 +52,8 @@ STX file features supported:
 - converts Division Mode charts with all possibilities so you can see all possible Division Mode charts in an STX (labeled _filename_variant_x_y_z_.ucs_ where x, y, and z are numbers)
 
 Due to limitations of the UCS file format, the scroll speed change feature is not supported.
+
+NOT5 file features supported:
+- BPM changes (the tool converts the changes from the Bunki system to the block system used by UCS)
+
+The UCS format supports all NOT5 features fully.
