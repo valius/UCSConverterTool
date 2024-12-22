@@ -15,7 +15,7 @@ class UCSConverterTool extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const ConvertView(title: 'Convert to UCS'),
+      home: const ConvertView(title: 'UCS Converter Tool v0.4.0'),
     );
   }
 }
