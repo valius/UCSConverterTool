@@ -1,6 +1,6 @@
-import 'package:ucsconvertertool/step_files/andamiro_common.dart';
-import 'package:ucsconvertertool/step_files/sm_common.dart';
-import 'package:ucsconvertertool/step_files/ucs_file.dart';
+import '../step_files/andamiro_common.dart';
+import '../step_files/sm_common.dart';
+import '../step_files/ucs_file.dart';
 
 class SMConverterHelperTuple {
   late double value;
@@ -103,7 +103,7 @@ bool checkIfStopMustBeQueued(
       }
 
       //Add line for stop
-      UCSBlockLine paddingLine = UCSBlockLine();
+      AndamiroStepLine paddingLine = AndamiroStepLine();
 
       int numberOfArrowsPerLine = 5;
       if (resultUCS.chartType == UCSChartType.double) {
@@ -133,7 +133,7 @@ bool checkIfStopMustBeQueued(
         currentUcsBlock.startTime = timeRemainingAtRegularBpm;
 
         //Add line for stop to help account for beatsplit alteration
-        paddingLine = UCSBlockLine();
+        paddingLine = AndamiroStepLine();
 
         for (int j = 0; j < numberOfArrowsPerLine; j++) {
           if (isHolding[j]) {
@@ -237,9 +237,9 @@ bool checkIfStopMustBeQueued(
   return (result, measureBeatSplitFactor, measureDirty);
 }
 
-UCSBlockLine convertSMLineToUCSLine(
+AndamiroStepLine convertSMLineToUCSLine(
     SMMeasureLine line, SMChartType chartType, List<bool> isHolding) {
-  UCSBlockLine ucsLine = UCSBlockLine();
+  AndamiroStepLine ucsLine = AndamiroStepLine();
   if (chartType == SMChartType.halfDouble) {
     //Pad with 2 0s on left side
     ucsLine.notes.add(AMNoteType.none);
@@ -288,8 +288,8 @@ UCSBlockLine convertSMLineToUCSLine(
   return ucsLine;
 }
 
-UCSBlockLine createPaddingLine(SMChartType chartType, List<bool> isHolding) {
-  UCSBlockLine paddingLine = UCSBlockLine();
+AndamiroStepLine createPaddingLine(SMChartType chartType, List<bool> isHolding) {
+  AndamiroStepLine paddingLine = AndamiroStepLine();
 
   if (chartType == SMChartType.halfDouble) {
     //Pad with 2 0s on left side
