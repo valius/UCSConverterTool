@@ -23,16 +23,12 @@ enum ChartIndex {
   chartCount,
 }
 
-class STXDivisionLine {
-  List<AMNoteType> notes = [];
-}
-
 class STXDivision {
   double bpm = 0;
   int delay = 0;
   int beatPerMeasure = 4; //Default
   int beatSplit = 0;
-  List<STXDivisionLine> lines = [];
+  List<AndamiroStepLine> lines = [];
   int speedFactor = 1000; //Default speed
 }
 
@@ -168,7 +164,7 @@ class STXFile {
             readUint32BytesFromByteList(decodedIndex, decodedData);
 
         for (int i = 0; i < lineCount; i++) {
-          STXDivisionLine line = STXDivisionLine();
+          AndamiroStepLine line = AndamiroStepLine();
 
           var steps = decodedData.sublist(decodedIndex, decodedIndex + 13);
           decodedIndex += 13;
