@@ -17,10 +17,6 @@ const List<int> not5Begin = [
   0X30
 ]; //"pump 5.0"
 
-class NotLine {
-  List<AMNoteType> notes = [];
-}
-
 class Not5File {
   final String _filename;
   final List<double> _bpms = List.filled(maxChanges, -1);
@@ -28,7 +24,7 @@ class Not5File {
   final List<int> _bunkis = List.filled(maxChanges, -1);
   int _beatSplit = 0;
   int _beatsPerMeasure = -1;
-  final List<NotLine> _lines = [];
+  final List<AndamiroStepLine> _lines = [];
 
   String get getFilename {
     return _filename;
@@ -54,7 +50,7 @@ class Not5File {
     return _beatsPerMeasure;
   }
 
-  List<NotLine> get getLines {
+  List<AndamiroStepLine> get getLines {
     return _lines;
   }
 
@@ -137,7 +133,7 @@ class Not5File {
       fileIndex += lineCount * 2;
 
       for (int i = 0; i < lineCount; i++) {
-        NotLine notLine = NotLine();
+        AndamiroStepLine notLine = AndamiroStepLine();
         var stepLowerByte = stepArray[i * 2 + 1];
         var stepHigherByte = stepArray[i * 2];
         var holdBeginLowerByte = holdBeginArray[i * 2 + 1];

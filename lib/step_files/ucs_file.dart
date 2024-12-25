@@ -11,16 +11,12 @@ enum UCSChartType {
   invalid
 }
 
-class UCSBlockLine {
-  List<AMNoteType> notes = [];
-}
-
 class UCSBlock {
   double bpm = 0;
   double startTime = 0;
   int beatPerMeasure = 4; //Default
   int beatSplit = 0;
-  List<UCSBlockLine> lines = [];
+  List<AndamiroStepLine> lines = [];
 }
 
 class UCSFile {
@@ -81,7 +77,7 @@ class UCSFile {
         sink.writeln(':Split=${block.beatSplit}');
 
         //notes
-        for (UCSBlockLine line in block.lines) {
+        for (AndamiroStepLine line in block.lines) {
           for (AMNoteType note in line.notes) {
             String charToWrite;
             switch (note) {

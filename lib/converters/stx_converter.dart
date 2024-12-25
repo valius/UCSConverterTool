@@ -3,9 +3,8 @@ import 'dart:developer';
 
 import "package:path/path.dart" as p;
 
-import 'package:ucsconvertertool/step_files/andamiro_common.dart';
-import 'package:ucsconvertertool/step_files/stx_file.dart';
-
+import '../step_files/andamiro_common.dart';
+import '../step_files/stx_file.dart';
 import '../step_files/ucs_file.dart';
 import 'i_converter.dart';
 
@@ -28,7 +27,7 @@ class STXConverter implements IConverter {
     //Each line for STX for double, half double, and single already correct amount of steps, so no
     //need to do extra logic to set correct line size
     for (var line in division.lines) {
-      UCSBlockLine ucsBlockLine = UCSBlockLine();
+      AndamiroStepLine ucsBlockLine = AndamiroStepLine();
       for (var step in line.notes) {
         if (step.index > AMNoteType.holdEnd.index) {
           //If notes are any of the special type, just mark it as regular for UCS

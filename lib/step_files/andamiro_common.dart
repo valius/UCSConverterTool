@@ -10,3 +10,7 @@ enum AMNoteType {
   bStep,
   cStep,
 }
+
+class AndamiroStepLine {
+  List<AMNoteType> notes = [];
+}

@@ -1,11 +1,12 @@
 import 'dart:developer' as dev;
 import 'dart:math';
 
-import 'package:ucsconvertertool/converters/i_converter.dart';
-import 'package:ucsconvertertool/converters/sm_converter_common.dart';
-import 'package:ucsconvertertool/step_files/sm_common.dart';
-import 'package:ucsconvertertool/step_files/ssc_file.dart';
-import 'package:ucsconvertertool/step_files/ucs_file.dart';
+import '../converters/i_converter.dart';
+import '../converters/sm_converter_common.dart';
+import '../step_files/andamiro_common.dart';
+import '../step_files/sm_common.dart';
+import '../step_files/ssc_file.dart';
+import '../step_files/ucs_file.dart';
 import "package:path/path.dart" as p;
 
 class SSCConverter implements IConverter {
@@ -188,7 +189,7 @@ class SSCConverter implements IConverter {
           currentUcsBlock.startTime = 0;
         }
 
-        UCSBlockLine ucsLine =
+        AndamiroStepLine ucsLine =
             convertSMLineToUCSLine(line, chart.getChartType, isHolding);
 
         //Add line
@@ -213,7 +214,7 @@ class SSCConverter implements IConverter {
         int numLinesToInsert = (resultBeatSplit ~/ beatSplit) - 1;
         //Finished adding the line, so add padding lines to maintain the tickcount
         for (int k = 0; k < numLinesToInsert; k++) {
-          UCSBlockLine paddingLine =
+          AndamiroStepLine paddingLine =
               createPaddingLine(chart.getChartType, isHolding);
 
           currentUcsBlock.lines.add(paddingLine);

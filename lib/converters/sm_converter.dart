@@ -1,10 +1,11 @@
 import 'dart:developer';
 
-import 'package:ucsconvertertool/converters/i_converter.dart';
-import 'package:ucsconvertertool/converters/sm_converter_common.dart';
-import 'package:ucsconvertertool/step_files/sm_common.dart';
-import 'package:ucsconvertertool/step_files/sm_file.dart';
-import 'package:ucsconvertertool/step_files/ucs_file.dart';
+import '../converters/i_converter.dart';
+import '../converters/sm_converter_common.dart';
+import '../step_files/andamiro_common.dart';
+import '../step_files/sm_common.dart';
+import '../step_files/sm_file.dart';
+import '../step_files/ucs_file.dart';
 import "package:path/path.dart" as p;
 
 class SMConverter implements IConverter {
@@ -126,7 +127,7 @@ class SMConverter implements IConverter {
           currentUcsBlock.startTime = 0;
         }
 
-        UCSBlockLine ucsLine =
+        AndamiroStepLine ucsLine =
             convertSMLineToUCSLine(line, chart.getChartType, isHolding);
 
         //Add line

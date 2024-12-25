@@ -1,10 +1,10 @@
-import "package:ucsconvertertool/converters/fallback_converter.dart";
-import "package:ucsconvertertool/converters/i_converter.dart";
+import "../converters/fallback_converter.dart";
+import "../converters/i_converter.dart";
+import "../converters/not_converter.dart";
+import "../converters/sm_converter.dart";
+import "../converters/ssc_converter.dart";
+import "../converters/stx_converter.dart";
 import "package:path/path.dart" as p;
-import "package:ucsconvertertool/converters/not_converter.dart";
-import "package:ucsconvertertool/converters/sm_converter.dart";
-import "package:ucsconvertertool/converters/ssc_converter.dart";
-import "package:ucsconvertertool/converters/stx_converter.dart";
 
 class ConverterGenerator {
   static final Map<String, IConverter Function(String)> _converterConstructors =

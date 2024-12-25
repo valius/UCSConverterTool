@@ -3,6 +3,8 @@ import 'package:ucsconvertertool/step_files/not_file.dart';
 import 'package:ucsconvertertool/step_files/ucs_file.dart';
 import "package:path/path.dart" as p;
 
+import '../step_files/andamiro_common.dart';
+
 class NotConverter implements IConverter {
   final String _filename;
 
@@ -116,7 +118,7 @@ class NotConverter implements IConverter {
       assert(notLine.notes.length == 10,
           "This NOT5 file's lines are malformed, not having 10 arrows");
 
-      UCSBlockLine ucsBlockLine = UCSBlockLine();
+      AndamiroStepLine ucsBlockLine = AndamiroStepLine();
       for (int i = 0; i < numberOfArrowsPerLine; i++) {
         ucsBlockLine.notes.add(notLine.notes[i]);
       }
