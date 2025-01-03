@@ -47,16 +47,9 @@ class NotConverter implements IConverter {
 
   @override
   Future<List<UCSFile>> convert() async {
-    Not5File file = Not5File(_filename);
+    NotFile file = NotFile(_filename);
 
     await file.intialize();
-
-    //Sanity check, a valid NOT5 file will have 10 starttimes, bpms, and bunkis
-    if (file.getBpms.length != maxChanges &&
-        file.getBunkis.length != maxChanges &&
-        file.getStartTimes.length != maxChanges) {
-      throw ("NOT5 is malformed because the number of bpms, starttimes, and bunkis is less than $maxChanges");
-    }
 
     List<double> validBpms;
     List<int> validBunkis;
@@ -68,7 +61,8 @@ class NotConverter implements IConverter {
     int numberOfArrowsPerLine;
 
     //Set to double
-    if (_filename.contains('_XD') || _filename.contains("_DB")) {
+    if (_filename.toUpperCase().contains('_XD') ||
+        _filename.toUpperCase().contains("_DB")) {
       resultUCS.chartType = UCSChartType.double;
       numberOfArrowsPerLine = 10;
     } else {
@@ -88,18 +82,15 @@ class NotConverter implements IConverter {
         10.0; //convert from centiseconds to milliseconds
     currentUCSBlock.beatSplit = file.getBeatSplit;
 
-    double timeNeededForOneLine = 1.0 /
-        file.getBeatSplit /
-        (file.getBpms[0] /
-            6000.0); //Done in centiseconds to check against bunki which is in centiseconds
+    double timeNeededForOneLine = (1.0 / file.getBeatSplit) /
+        (file.getBpms[0] / 6000.0); //Done in centiseconds to check against bunki which is in centiseconds
 
-    int numLinesProcessed = 0;
+    double timePassed = file.getStartTimes[0].toDouble();
     int currentBpmIndex = 1;
     int currentBunkiIndex = 0;
     bool hasBunkis = validBunkis.isNotEmpty;
     for (var notLine in file.getLines) {
       if (hasBunkis && currentBunkiIndex != validBunkis.length) {
-        double timePassed = timeNeededForOneLine * numLinesProcessed;
         if (timePassed >= validBunkis[currentBunkiIndex]) {
           if (currentUCSBlock.lines.isNotEmpty) {
             resultUCS.getBlocks.add(currentUCSBlock);
@@ -113,10 +104,16 @@ class NotConverter implements IConverter {
 
           currentBunkiIndex++;
           currentBpmIndex++;
+
+          timeNeededForOneLine = (1.0 / file.getBeatSplit) /
+              (file.getBpms[currentBpmIndex] / 6000.0);
         }
       }
+
+      timePassed += timeNeededForOneLine;
+
       assert(notLine.notes.length == 10,
-          "This NOT5 file's lines are malformed, not having 10 arrows");
+          "This NOT file's lines are malformed, not having 10 arrows");
 
       AndamiroStepLine ucsBlockLine = AndamiroStepLine();
       for (int i = 0; i < numberOfArrowsPerLine; i++) {
@@ -124,8 +121,6 @@ class NotConverter implements IConverter {
       }
 
       currentUCSBlock.lines.add(ucsBlockLine);
-
-      numLinesProcessed++;
     }
 
     if (currentUCSBlock.lines.isNotEmpty) {
