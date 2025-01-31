@@ -525,7 +525,7 @@ class NotFile {
       (fileIndex, beatsPerMeasure) =
           readUint32BytesFromByteList(fileIndex, contents);
       if (beatsPerMeasure == 0) {
-        beatsPerMeasure = 4; //Default to 4 if nothing is specified
+        beatsPerMeasure = 16; //Default to 16 if nothing is specified (follow official converter default)
       }
       _beatsPerMeasure = beatsPerMeasure;
 
