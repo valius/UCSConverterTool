@@ -31,6 +31,6 @@ double readFloat32Bytes(List<int> bytes) {
   //Do double conversion, and since we only have 4 bytes, we only have 1 double
   //Reverse byte order to convert from little to big endian
   final byteData =
-      ByteData.sublistView(Uint8List.fromList(bytes.reversed.toList()));
-  return byteData.getFloat32(0);
+      ByteData.sublistView(Uint8List.fromList(bytes));
+  return byteData.getFloat32(0, Endian.little);
 }

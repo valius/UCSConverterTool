@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:ucsconvertertool/converters/i_converter.dart';
 import 'package:ucsconvertertool/step_files/not_file.dart';
 import 'package:ucsconvertertool/step_files/ucs_file.dart';
@@ -5,16 +7,25 @@ import "package:path/path.dart" as p;
 
 import '../step_files/andamiro_common.dart';
 
+class NotConverterBunkiLineInfo {
+  int bunkiEnterLines = -1;
+  double bunkiEnterOffset = -1;
+  int bunkiExitLines = -1;
+  double bunkiExitOffset = -1;
+}
+
 class NotConverter implements IConverter {
   final String _filename;
 
   NotConverter(this._filename);
 
   //We already do a sanity check before using this function so no checking here
-  ({List<double> bpms, List<int> bunkis}) filterBpmsAndBunkis(
-      List<double> bpms, List<int> bunkis) {
+  ({List<int> startTimes, List<double> bpms, List<int> bunkis})
+      _filterBpmsAndBunkis(
+          List<int> startTimes, List<double> bpms, List<int> bunkis) {
     //BPM list always has the very first one
     List<double> resultBpms = List.filled(1, bpms[0], growable: true);
+    List<int> resultStartTimes = List.filled(1, startTimes[0], growable: true);
     List<int> resultBunkis = [];
 
     int previousBunki = -1;
@@ -32,12 +43,61 @@ class NotConverter implements IConverter {
       }
 
       resultBpms.add(bpms[i + 1]);
+      resultStartTimes.add(startTimes[i + 1]);
       resultBunkis.add(bunki);
 
       previousBunki = bunki;
     }
 
-    return (bpms: resultBpms, bunkis: resultBunkis);
+    return (
+      startTimes: resultStartTimes,
+      bpms: resultBpms,
+      bunkis: resultBunkis
+    );
+  }
+
+  List<NotConverterBunkiLineInfo> _getBunkiLineInfo(List<int> startTimes,
+      List<double> bpms, List<int> bunkis, int beatSplit) {
+    if (bunkis.isEmpty) {
+      return [];
+    }
+
+    List<NotConverterBunkiLineInfo> result = [];
+    //Handle first bunki line info
+    NotConverterBunkiLineInfo firstBunkiLineInfo = NotConverterBunkiLineInfo();
+    double rawLineCount =
+        ((bunkis[0] - startTimes[0]) * (bpms[0] / 6000.0) * beatSplit);
+    firstBunkiLineInfo.bunkiExitLines = rawLineCount.floor();
+    firstBunkiLineInfo.bunkiExitOffset =
+        (rawLineCount - firstBunkiLineInfo.bunkiExitLines) /
+            ((bpms[0] / 6000.0) * beatSplit);
+
+    result.add(firstBunkiLineInfo);
+
+    for (int i = 0; i < bunkis.length; i++) {
+      NotConverterBunkiLineInfo bunkiLineInfo = NotConverterBunkiLineInfo();
+      rawLineCount = ((bunkis[i] - startTimes[i + 1]) *
+          (bpms[i + 1] / 6000.0) *
+          beatSplit);
+      bunkiLineInfo.bunkiEnterLines = rawLineCount.ceil();
+      bunkiLineInfo.bunkiEnterOffset =
+          (bunkiLineInfo.bunkiEnterLines - rawLineCount) /
+              ((bpms[i + 1] / 6000.0) * beatSplit);
+
+      if (i < bunkis.length - 1) {
+        rawLineCount = ((bunkis[i + 1] - startTimes[i + 1]) *
+            (bpms[i + 1] / 6000.0) *
+            beatSplit);
+        bunkiLineInfo.bunkiExitLines = rawLineCount.floor();
+        bunkiLineInfo.bunkiExitOffset =
+            (rawLineCount - bunkiLineInfo.bunkiExitLines) /
+                ((bpms[0] / 6000.0) * beatSplit);
+      }
+
+      result.add(bunkiLineInfo);
+    }
+
+    return result;
   }
 
   @override
@@ -47,28 +107,23 @@ class NotConverter implements IConverter {
 
   @override
   Future<List<UCSFile>> convert() async {
-    Not5File file = Not5File(_filename);
+    NotFile file = NotFile(_filename);
 
     await file.intialize();
 
-    //Sanity check, a valid NOT5 file will have 10 starttimes, bpms, and bunkis
-    if (file.getBpms.length != maxChanges &&
-        file.getBunkis.length != maxChanges &&
-        file.getStartTimes.length != maxChanges) {
-      throw ("NOT5 is malformed because the number of bpms, starttimes, and bunkis is less than $maxChanges");
-    }
-
     List<double> validBpms;
     List<int> validBunkis;
-    (bpms: validBpms, bunkis: validBunkis) =
-        filterBpmsAndBunkis(file.getBpms, file.getBunkis);
+    List<int> validStartTimes;
+    (startTimes: validStartTimes, bpms: validBpms, bunkis: validBunkis) =
+        _filterBpmsAndBunkis(file.getStartTimes, file.getBpms, file.getBunkis);
 
     String ucsFilename = "${p.withoutExtension(_filename)}.ucs";
     UCSFile resultUCS = UCSFile(ucsFilename);
     int numberOfArrowsPerLine;
 
     //Set to double
-    if (_filename.contains('_XD') || _filename.contains("_DB")) {
+    if (_filename.toUpperCase().contains('_XD') ||
+        _filename.toUpperCase().contains("_DB")) {
       resultUCS.chartType = UCSChartType.double;
       numberOfArrowsPerLine = 10;
     } else {
@@ -76,62 +131,107 @@ class NotConverter implements IConverter {
       numberOfArrowsPerLine = 5;
     }
 
-    //Create first block
-    UCSBlock currentUCSBlock = UCSBlock();
-    currentUCSBlock.bpm = validBpms[0];
-    currentUCSBlock.beatPerMeasure = file.getBeatsPerMeasure;
+    var bunkiLineInfo = _getBunkiLineInfo(
+        validStartTimes, validBpms, validBunkis, file.getBeatSplit);
 
-    //The first start time is the only one we care about, the other start times are used so that the chart will be in the correct spot for when bunki is reached in the engine
-    //We will make the assumption that the bunki is the time when the BPM changed regardless of whether the start time is correct or not, since that's how it was used in
-    //the Extra engine
-    currentUCSBlock.startTime = file.getStartTimes[0] *
-        10.0; //convert from centiseconds to milliseconds
-    currentUCSBlock.beatSplit = file.getBeatSplit;
+    if (bunkiLineInfo.isEmpty) {
+      UCSBlock block = _buildUCSBlock(0, file.getLines.length - 1, file,
+          validBpms[0], numberOfArrowsPerLine, validStartTimes[0].toDouble());
 
-    double timeNeededForOneLine = 1.0 /
-        file.getBeatSplit /
-        (file.getBpms[0] /
-            6000.0); //Done in centiseconds to check against bunki which is in centiseconds
+      //For NOT4, add padding line to beginning of the sole block's lines to emulate
+      //official converters
+      if (!file.isNot5) {
+        AndamiroStepLine paddingLine = AndamiroStepLine();
+        for (int i = 0; i < numberOfArrowsPerLine; i++) {
+          paddingLine.notes.add(AMNoteType.none);
+        }
 
-    int numLinesProcessed = 0;
-    int currentBpmIndex = 1;
-    int currentBunkiIndex = 0;
-    bool hasBunkis = validBunkis.isNotEmpty;
-    for (var notLine in file.getLines) {
-      if (hasBunkis && currentBunkiIndex != validBunkis.length) {
-        double timePassed = timeNeededForOneLine * numLinesProcessed;
-        if (timePassed >= validBunkis[currentBunkiIndex]) {
-          if (currentUCSBlock.lines.isNotEmpty) {
-            resultUCS.getBlocks.add(currentUCSBlock);
-          }
-          //create new block
-          currentUCSBlock = UCSBlock();
-          currentUCSBlock.bpm = validBpms[currentBpmIndex];
-          currentUCSBlock.beatSplit = file.getBeatSplit;
-          currentUCSBlock.startTime = 0;
-          currentUCSBlock.beatPerMeasure = file.getBeatsPerMeasure;
+        block.lines.insert(0, paddingLine);
+      }
 
-          currentBunkiIndex++;
-          currentBpmIndex++;
+      resultUCS.getBlocks.add(block);
+
+      return List.filled(1, resultUCS);
+    }
+
+    //Create blocks based on bunki
+    for (int i = 0; i < bunkiLineInfo.length; i++) {
+      NotConverterBunkiLineInfo lineInfo = bunkiLineInfo[i];
+      int beginLineIndex = 0;
+
+      int endLineIndex = file.getLines.length - 1;
+      double offset;
+
+      //For NOT4, we subtract 2 because of the padding line to be added to beginning of file to emulate official converters
+      if (lineInfo.bunkiEnterLines != -1) {
+        if (!file.isNot5) {
+          beginLineIndex = lineInfo.bunkiEnterLines - 2;
+        } else {
+          beginLineIndex = lineInfo.bunkiEnterLines - 1;
         }
       }
+
+      if (lineInfo.bunkiExitLines != -1) {
+        if (!file.isNot5) {
+          endLineIndex = lineInfo.bunkiExitLines - 2;
+        } else {
+          endLineIndex = lineInfo.bunkiExitLines - 1;
+        }
+      }
+
+      if (i > 0) {
+        double adjustment = 16;   //Adjustment of centiseconds for NOT4 offset, needed or chart will be out of sync
+        if (file.isNot5) {
+          adjustment = 14;    //Adjustment value for NOT5
+        }
+        offset = max((bunkiLineInfo[i - 1].bunkiExitOffset +
+                lineInfo.bunkiEnterOffset -
+                adjustment).floorToDouble(), 0);
+      } else {
+        offset = validStartTimes[0].toDouble();
+      }
+      UCSBlock block = _buildUCSBlock(beginLineIndex, endLineIndex, file,
+          validBpms[i], numberOfArrowsPerLine, offset);
+
+      if (!file.isNot5 && i == 0) {
+        //For NOT4, add padding line to beginning of the first block's lines to emulate
+        //official converters
+        AndamiroStepLine paddingLine = AndamiroStepLine();
+        for (int i = 0; i < numberOfArrowsPerLine; i++) {
+          paddingLine.notes.add(AMNoteType.none);
+        }
+
+        block.lines.insert(0, paddingLine);
+      }
+
+      resultUCS.getBlocks.add(block);
+    }
+
+    return List.filled(1, resultUCS);
+  }
+
+  UCSBlock _buildUCSBlock(int beginLineIndex, int endLineIndex, NotFile file,
+      double bpm, int numberOfArrowsPerLine, double offset) {
+    UCSBlock ucsBlock = UCSBlock();
+    ucsBlock.beatPerMeasure = file.getBeatsPerMeasure;
+    ucsBlock.beatSplit = file.getBeatSplit;
+    ucsBlock.bpm = bpm;
+    ucsBlock.startTime =
+        offset * 10.0; //convert from centiseconds to milliseconds
+
+    for (int i = beginLineIndex; i <= endLineIndex; i++) {
+      var notLine = file.getLines[i];
       assert(notLine.notes.length == 10,
-          "This NOT5 file's lines are malformed, not having 10 arrows");
+          "This NOT file's lines are malformed, not having 10 arrows");
 
       AndamiroStepLine ucsBlockLine = AndamiroStepLine();
       for (int i = 0; i < numberOfArrowsPerLine; i++) {
         ucsBlockLine.notes.add(notLine.notes[i]);
       }
 
-      currentUCSBlock.lines.add(ucsBlockLine);
-
-      numLinesProcessed++;
+      ucsBlock.lines.add(ucsBlockLine);
     }
 
-    if (currentUCSBlock.lines.isNotEmpty) {
-      resultUCS.getBlocks.add(currentUCSBlock);
-    }
-
-    return List.filled(1, resultUCS);
+    return ucsBlock;
   }
 }
